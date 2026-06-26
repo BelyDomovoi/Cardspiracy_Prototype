@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import phrasesData from "../data/protopie_phrases_combined.json";
 
 // ─── Shared assets ────────────────────────────────────────────────────────────
 import imgBg from "../imports/1/35ef4ddb3c75e406cbe598fee14997df39c43963.png";
@@ -16,6 +17,11 @@ import imgSubtractA from "../imports/1/cb288efdc4cf394b455da759efc8b2c15d1b67fd.
 import imgSubtractB from "../imports/2/ebdc476ccac2a8138c777970f46b2fb77fb4db77.png";
 import imgIconMailA from "../imports/1/c5df63a57b8c81b94233fe80d99c95ed558ce82f.png";
 import imgIconMailB from "../imports/2/859ad54447a7b75c94f474ac10c6ccc5416689c5.png";
+import imgHeroMushroom from "../imports/hero_mushroom.png";
+import imgPhraseEmptyBg from "../imports/phrase_empty_bg.png";
+import imgCardGovernment from "../imports/card_government.png";
+import imgCardHollowEarth from "../imports/card_hollow_earth.png";
+import imgCardOtherworldly from "../imports/card_otherworldly.png";
 import svgPaths from "../imports/1/svg-81hq1u4nej";
 
 // ─── Shake animation keyframes ────────────────────────────────────────────────
@@ -30,6 +36,16 @@ const ANIMATION_CSS = `
   40%  { transform: translateX(0px);  }
   100% { transform: translateX(0px);  }
 }
+@keyframes phraseFall {
+  0%   { transform: translateY(-190px); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateY(690px); opacity: 0; }
+}
+@keyframes indicatorPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.32; transform: scale(0.86); }
+}
 `;
 
 // ─── Interaction state machine ────────────────────────────────────────────────
@@ -39,6 +55,7 @@ type IntroPhase =
   | "revealingInitialMessages" // messages animating in, screen_firststage disabled
   | "readingMessages"          // messages visible, screen_firststage enabled
   | "finalIntroState"          // Frame 5 messages visible, Rec active
+  | "phraseSelection"          // phrase picking game after Rec
   | "testCompleted";           // summary shown
 
 // ─── Animation timing constants ───────────────────────────────────────────────
@@ -51,6 +68,55 @@ const REVEAL_TOTAL_MS  = MSG2_DELAY_MS + MSG_ANIM_MS + 30; // ≈490ms buffer
 
 const HANDWRITE_FONT   = "'SNFBSTRD handwrite', sans-serif";
 const PHRASE_READING   = "может и рад бы забыть";
+const MAX_SELECTED_PHRASES = 10;
+const PHRASE_SPAWN_MS = 3000;
+const PHRASE_FALL_MS = 9500;
+const PHRASE_WIDTH = 400;
+const PHRASE_LANES = [63.77, 424.43];
+
+type CardCategory = "GOVERNMENT" | "HOLLOW_EARTH" | "OTHERWORLDLY";
+type PhraseType = CardCategory | "NONE";
+
+interface PhraseRecord {
+  id: number;
+  type: PhraseType;
+  text: string;
+}
+
+interface FallingPhrase extends PhraseRecord {
+  instanceId: number;
+  left: number;
+  duration: number;
+  height: number;
+  fontSize: number;
+}
+
+const CARD_IMAGES: Record<CardCategory, { src: string; name: string; rotate: string }> = {
+  GOVERNMENT: { src: imgCardGovernment, name: "Goverment_Card", rotate: "-2deg" },
+  HOLLOW_EARTH: { src: imgCardHollowEarth, name: "HollowEarth_Card", rotate: "2deg" },
+  OTHERWORLDLY: { src: imgCardOtherworldly, name: "OtherWorld_Card", rotate: "-1deg" },
+};
+
+const PHRASE_POOL: PhraseRecord[] = (phrasesData as { phrases: PhraseRecord[] }).phrases.map((phrase) => ({
+  id: phrase.id,
+  type: phrase.type,
+  text: phrase.text,
+}));
+
+function shuffledPhrases() {
+  return [...PHRASE_POOL].sort(() => Math.random() - 0.5);
+}
+
+function getPhraseHeight(text: string) {
+  return 120;
+}
+
+function getPhraseFontSize(text: string) {
+  if (text.length > 112) return 15;
+  if (text.length > 82) return 16;
+  if (text.length > 58) return 18;
+  return 20;
+}
 
 // ─── Test metrics ─────────────────────────────────────────────────────────────
 // stateTimings[0] = time in waitingForAlert (start → alert)
@@ -122,11 +188,25 @@ function Desk() {
   );
 }
 
+function HeroMushroom() {
+  return (
+    <div className="absolute h-[541px] left-[57px] overflow-hidden top-[92.37px] w-[429px]" data-name="hero_mushroom">
+      <img
+        alt=""
+        className="absolute inset-0 max-w-none object-cover pointer-events-none size-full"
+        src={imgHeroMushroom}
+      />
+    </div>
+  );
+}
+
 function Keyboard({
   onRecClick,
+  onTipClick,
   recActive,
 }: {
   onRecClick: (e: React.MouseEvent) => void;
+  onTipClick: (e: React.MouseEvent) => void;
   recActive: boolean;
 }) {
   return (
@@ -171,6 +251,19 @@ function Keyboard({
           style={{ fontFamily: "'Gagalin', sans-serif" }}
         >
           <p className="leading-none">rec</p>
+        </div>
+      </div>
+      <div
+        aria-label="Show test results"
+        className="absolute flex h-[27.116px] items-center justify-center left-[161.24px] top-[134.5px] w-[127.148px]"
+        data-name="tip"
+        onClick={onTipClick}
+        role="button"
+        style={{ cursor: "pointer" }}
+        tabIndex={0}
+      >
+        <div className="flex-none rotate-[0.45deg]">
+          <div className="bg-[#3d3d3d] h-[26.122px] opacity-15 relative w-[126.947px]" />
         </div>
       </div>
     </div>
@@ -260,7 +353,7 @@ function Bg() {
 function Screen({ subtractImg }: { subtractImg: string }) {
   return (
     <div className="absolute contents left-0 top-0" data-name="screen">
-      <div className="absolute h-[574.542px] left-[0.78px] top-[1.89px] w-[889.065px]" data-name="Subtract">
+      <div className="absolute h-[574.542px] left-[0.78px] pointer-events-none top-[1.89px] w-[889.065px] z-[20]" data-name="Subtract">
         <img
           alt=""
           className="absolute block inset-0 max-w-none size-full"
@@ -270,7 +363,7 @@ function Screen({ subtractImg }: { subtractImg: string }) {
         />
       </div>
       <div
-        className="absolute h-[574.542px] left-0 top-0 w-[887.257px]"
+        className="absolute h-[574.542px] left-0 pointer-events-none top-0 w-[887.257px] z-[20]"
         data-name="ChatGPT Image Apr 6, 2026, 02_31_25 PM 1"
       >
         <div aria-hidden className="absolute inset-0 pointer-events-none">
@@ -501,6 +594,159 @@ function MonitorMessages3() {
   );
 }
 
+function PhraseCounter({ value, active }: { value: number; active: boolean }) {
+  return (
+    <div className="absolute content-stretch flex gap-[12px] items-center justify-center left-[29.22px] top-[28.5px]" data-name="counter">
+      <div
+        className="relative shrink-0 size-[40px]"
+        data-name="indicator"
+        style={{ animation: active ? "indicatorPulse 820ms ease-in-out infinite" : undefined }}
+      >
+        <div className="absolute inset-0 rounded-full bg-[#e23939]" />
+        <div className="absolute inset-[3px] rounded-full border border-[#edebdf]" />
+      </div>
+      <div
+        className="[word-break:break-word] flex flex-col h-[56.952px] justify-center leading-[0] not-italic relative shrink-0 text-[#e23939] text-[44px] tracking-[-0.88px] w-[92px]"
+        style={{ fontFamily: "'Gagalin', sans-serif" }}
+      >
+        <p className="leading-none">{value}/{MAX_SELECTED_PHRASES}</p>
+      </div>
+    </div>
+  );
+}
+
+function PhraseTile({
+  phrase,
+  onPick,
+  onExpired,
+}: {
+  phrase: FallingPhrase;
+  onPick: (phrase: FallingPhrase, e: React.MouseEvent) => void;
+  onExpired: (instanceId: number) => void;
+}) {
+  return (
+    <div
+      className="absolute overflow-clip top-0"
+      data-name="phrase"
+      onAnimationEnd={() => onExpired(phrase.instanceId)}
+      onClick={(e) => onPick(phrase, e)}
+      style={{
+        animation: `phraseFall ${phrase.duration}ms linear forwards`,
+        cursor: "pointer",
+        height: phrase.height,
+        left: phrase.left,
+        width: PHRASE_WIDTH,
+        zIndex: 10,
+      }}
+    >
+      <div
+        className="absolute border border-black border-solid left-0 overflow-clip top-0 w-full"
+        style={{ height: phrase.height }}
+      >
+        <div className="absolute bg-white inset-0" />
+        <img
+          alt=""
+          className="absolute bottom-0 left-0 max-w-none object-bottom opacity-20 pointer-events-none w-[calc(100%-24px)]"
+          src={imgPhraseEmptyBg}
+          style={{ height: phrase.height }}
+        />
+        <div
+          className="[word-break:break-word] absolute bottom-[14px] flex flex-col justify-center leading-[0] left-[20px] not-italic text-[#171717] top-[14px] tracking-[-0.4px] w-[329px]"
+          style={{ fontFamily: HANDWRITE_FONT, fontSize: phrase.fontSize }}
+        >
+          <p className="leading-none">{phrase.text}</p>
+        </div>
+      </div>
+      <div className="absolute bg-[#171717] right-0 top-0 w-[24px]" style={{ height: phrase.height }} />
+      <div
+        className="absolute flex items-center justify-center right-0 size-[24px] text-[#edebdf] text-[28px]"
+        aria-hidden
+        style={{ top: (phrase.height - 24) / 2 }}
+      >
+        <span className="block leading-none translate-y-[-1px]">+</span>
+      </div>
+    </div>
+  );
+}
+
+function CategoryCard({
+  category,
+  index,
+  total,
+}: {
+  category: CardCategory;
+  index: number;
+  total: number;
+}) {
+  const card = CARD_IMAGES[category];
+  const figmaLefts = [907.41, 1034.36, 1155.33];
+  const left = total <= 3
+    ? figmaLefts[index]
+    : 760 + index * ((1470 - 760 - 152) / Math.max(1, total - 1));
+  return (
+    <div
+      className="absolute h-[223px] overflow-clip top-[597px] w-[152px]"
+      data-name={card.name}
+      style={{
+        left,
+        transform: `rotate(${card.rotate})`,
+        boxShadow: "0 12px 24px rgba(0,0,0,0.35)",
+      }}
+    >
+      <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={card.src} />
+    </div>
+  );
+}
+
+function AwardedCards({ cards }: { cards: CardCategory[] }) {
+  const visibleCards = cards.slice(0, MAX_SELECTED_PHRASES);
+  return (
+    <>
+      {visibleCards.map((category, index) => (
+        <CategoryCard
+          key={`${category}-${index}`}
+          category={category}
+          index={index}
+          total={visibleCards.length}
+        />
+      ))}
+    </>
+  );
+}
+
+function PhraseSelectionScene({
+  activePhrases,
+  selectedCount,
+  onPhraseClick,
+  onPhraseExpired,
+}: {
+  activePhrases: FallingPhrase[];
+  selectedCount: number;
+  onPhraseClick: (phrase: FallingPhrase, e: React.MouseEvent) => void;
+  onPhraseExpired: (instanceId: number) => void;
+}) {
+  return (
+    <>
+      <div
+        className="absolute h-[544px] left-0 overflow-hidden top-[15px] w-[887.257px] z-[10]"
+        data-name="phrase_flow"
+      >
+        {activePhrases.map((phrase) => (
+          <PhraseTile
+            key={phrase.instanceId}
+            phrase={phrase}
+            onPick={onPhraseClick}
+            onExpired={onPhraseExpired}
+          />
+        ))}
+      </div>
+      <div className="absolute inset-0 pointer-events-none z-[40]">
+        <PhraseCounter value={selectedCount} active={selectedCount < MAX_SELECTED_PHRASES} />
+      </div>
+    </>
+  );
+}
+
 // ─── Character phrase scrim ───────────────────────────────────────────────────
 function CharacterPhrase({ phrase, visible }: { phrase: string; visible: boolean }) {
   return (
@@ -677,9 +923,15 @@ export default function App() {
   const [phraseVisible, setPhraseVisible] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [metrics, setMetrics] = useState<TestMetrics>(createMetrics);
+  const [activePhrases, setActivePhrases] = useState<FallingPhrase[]>([]);
+  const [selectedPhraseCount, setSelectedPhraseCount] = useState(0);
+  const [awardedCards, setAwardedCards] = useState<CardCategory[]>([]);
 
   // Multiple timers managed via a ref array
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const phraseDeckRef = useRef<PhraseRecord[]>(shuffledPhrases());
+  const phraseInstanceRef = useRef(0);
+  const phraseLaneRef = useRef(0);
   const clearTimers = useCallback(() => {
     timersRef.current.forEach(clearTimeout);
     timersRef.current = [];
@@ -688,9 +940,48 @@ export default function App() {
     const id = setTimeout(fn, ms);
     timersRef.current.push(id);
   }, []);
+  const spawnPhrase = useCallback(() => {
+    setActivePhrases((current) => {
+      if (current.length >= 2) return current;
+      if (phraseDeckRef.current.length === 0) {
+        phraseDeckRef.current = shuffledPhrases();
+      }
+
+      const activeTexts = new Set(current.map((phrase) => phrase.text));
+      let next = phraseDeckRef.current.pop();
+      let guard = 0;
+      while (next && activeTexts.has(next.text) && guard < phraseDeckRef.current.length) {
+        phraseDeckRef.current.unshift(next);
+        next = phraseDeckRef.current.pop();
+        guard += 1;
+      }
+      if (!next) return current;
+
+      const occupiedLanes = new Set(current.map((phrase) => phrase.left));
+      let laneIndex = phraseLaneRef.current % PHRASE_LANES.length;
+      if (occupiedLanes.has(PHRASE_LANES[laneIndex])) {
+        laneIndex = (laneIndex + 1) % PHRASE_LANES.length;
+      }
+      phraseLaneRef.current = laneIndex + 1;
+
+      phraseInstanceRef.current += 1;
+      return [
+        ...current,
+        {
+          ...next,
+          instanceId: phraseInstanceRef.current,
+          left: PHRASE_LANES[laneIndex],
+          duration: PHRASE_FALL_MS,
+          height: getPhraseHeight(next.text),
+          fontSize: getPhraseFontSize(next.text),
+        },
+      ];
+    });
+  }, []);
 
   // ── Derived visual values ──────────────────────────────────────────────────
   const isAlertIcon   = phase === "envelopeAlert";
+  const isPhraseSelection = phase === "phraseSelection";
   const subtractImg   = showFinalMessages      ? imgSubtractB
                       : isAlertIcon            ? imgSubtractB
                       : imgSubtractA;
@@ -721,6 +1012,20 @@ export default function App() {
       clearTimers();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (phase !== "phraseSelection" || selectedPhraseCount >= MAX_SELECTED_PHRASES) return;
+
+    spawnPhrase();
+    const id = setInterval(spawnPhrase, PHRASE_SPAWN_MS);
+    return () => clearInterval(id);
+  }, [phase, selectedPhraseCount, spawnPhrase]);
+
+  useEffect(() => {
+    if (phase === "phraseSelection" && selectedPhraseCount >= MAX_SELECTED_PHRASES) {
+      setActivePhrases([]);
+    }
+  }, [phase, selectedPhraseCount]);
 
   // ── Envelope click (envelopeAlert only) ───────────────────────────────────
   const handleEnvelopeClick = useCallback(
@@ -770,6 +1075,7 @@ export default function App() {
         case "waitingForAlert":
         case "revealingInitialMessages":
         case "finalIntroState":
+        case "phraseSelection":
         case "testCompleted":
           return;
 
@@ -804,30 +1110,84 @@ export default function App() {
   const handleRecClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (phase === "testCompleted") return;
+      if (phase === "testCompleted" || phase === "phraseSelection") return;
 
-      if (phase !== "finalIntroState") {
+      if (phase !== "finalIntroState" && phase !== "testCompleted") {
         setMetrics(prev => ({ ...prev, prematureRecClicks: prev.prematureRecClicks + 1 }));
         return;
       }
 
       const now = Date.now();
-      setPhase("testCompleted");
+      setActivePhrases([]);
+      setSelectedPhraseCount(0);
+      setAwardedCards([]);
+      phraseDeckRef.current = shuffledPhrases();
+      phraseLaneRef.current = 0;
+      setPhase("phraseSelection");
       setMetrics(prev => {
         const timings = [...prev.stateTimings];
         timings[3] = now - (prev.stateEntryTimes[3] || now);
         return {
           ...prev,
           recClicked: true,
-          finalStateReached: true,
+          stateTimings: timings,
+        };
+      });
+    },
+    [phase]
+  );
+
+  // ── Tip click ──────────────────────────────────────────────────────────────
+  const handleTipClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (phase === "testCompleted") return;
+
+      const now = Date.now();
+      clearTimers();
+      setPhase("testCompleted");
+      setMetrics(prev => {
+        const timings = [...prev.stateTimings];
+        if (phase === "waitingForAlert") timings[0] = now - prev.stateEntryTimes[0];
+        if (phase === "envelopeAlert") timings[1] = now - (prev.stateEntryTimes[1] || now);
+        if (phase === "readingMessages") timings[2] = now - (prev.stateEntryTimes[2] || now);
+        if (phase === "finalIntroState") timings[3] = now - (prev.stateEntryTimes[3] || now);
+        if (phase === "phraseSelection" && timings[3] === null) {
+          timings[3] = now - (prev.stateEntryTimes[3] || now);
+        }
+        return {
+          ...prev,
+          finalStateReached: prev.finalStateReached || phase === "finalIntroState",
+          messagesSkipped:
+            prev.messagesSkipped ||
+            phase === "waitingForAlert" ||
+            phase === "envelopeAlert" ||
+            phase === "revealingInitialMessages" ||
+            phase === "readingMessages",
           completionTime: now,
           stateTimings: timings,
         };
       });
       setShowSummary(true);
     },
-    [phase]
+    [phase, clearTimers]
   );
+
+  const handlePhraseExpired = useCallback((instanceId: number) => {
+    setActivePhrases((current) => current.filter((phrase) => phrase.instanceId !== instanceId));
+  }, []);
+
+  const handlePhraseClick = useCallback((phrase: FallingPhrase, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedPhraseCount >= MAX_SELECTED_PHRASES) return;
+
+    setActivePhrases((current) => current.filter((item) => item.instanceId !== phrase.instanceId));
+    setSelectedPhraseCount((current) => Math.min(MAX_SELECTED_PHRASES, current + 1));
+
+    if (phrase.type !== "NONE") {
+      setAwardedCards((cards) => [...cards, phrase.type as CardCategory]);
+    }
+  }, [selectedPhraseCount]);
 
   // ── Global misclick ────────────────────────────────────────────────────────
   const handleGlobalClick = useCallback(() => {
@@ -846,6 +1206,11 @@ export default function App() {
     setShowFinalMessages(false);
     setPhraseVisible(false);
     setShowSummary(false);
+    setActivePhrases([]);
+    setSelectedPhraseCount(0);
+    setAwardedCards([]);
+    phraseDeckRef.current = shuffledPhrases();
+    phraseLaneRef.current = 0;
     setMetrics(createMetrics());
 
     const id = setTimeout(() => {
@@ -904,6 +1269,8 @@ export default function App() {
           </div>
         </div>
 
+        {isPhraseSelection && <HeroMushroom />}
+
         {/* Desk shelf */}
         <div className="absolute flex h-[50px] items-center justify-center left-[-3px] top-[586px] w-[661px]">
           <div className="-scale-y-100 flex-none rotate-180">
@@ -912,7 +1279,11 @@ export default function App() {
         </div>
 
         {/* Keyboard + Rec */}
-        <Keyboard onRecClick={handleRecClick} recActive={recActive} />
+        <Keyboard
+          onRecClick={handleRecClick}
+          onTipClick={handleTipClick}
+          recActive={recActive}
+        />
 
         {/* Monitor — screen_firststage */}
         <div
@@ -924,12 +1295,14 @@ export default function App() {
           <Bg />
           <Screen subtractImg={subtractImg} />
 
-          <MailIconAnimated
-            isAlert={isAlertIcon}
-            badgeIn={badgeIn}
-            isShaking={envelopeShaking}
-            onEnvClick={phase === "envelopeAlert" ? handleEnvelopeClick : undefined}
-          />
+          {!isPhraseSelection && (
+            <MailIconAnimated
+              isAlert={isAlertIcon}
+              badgeIn={badgeIn}
+              isShaking={envelopeShaking}
+              onEnvClick={phase === "envelopeAlert" ? handleEnvelopeClick : undefined}
+            />
+          )}
 
           <MouseLeftClick />
 
@@ -937,8 +1310,18 @@ export default function App() {
           {showMessages1 && <MonitorMessages2 msg1In={msg1In} msg2In={msg2In} />}
 
           {/* Final messages — instant */}
-          {showFinalMessages && <MonitorMessages3 />}
+          {showFinalMessages && !isPhraseSelection && <MonitorMessages3 />}
+          {isPhraseSelection && (
+            <PhraseSelectionScene
+              activePhrases={activePhrases}
+              selectedCount={selectedPhraseCount}
+              onPhraseClick={handlePhraseClick}
+              onPhraseExpired={handlePhraseExpired}
+            />
+          )}
         </div>
+
+        {isPhraseSelection && <AwardedCards cards={awardedCards} />}
 
         {/* Character phrase scrim */}
         <CharacterPhrase phrase={PHRASE_READING} visible={phraseVisible} />

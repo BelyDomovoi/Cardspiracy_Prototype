@@ -1,0 +1,376 @@
+{
+  "meta": {
+    "total": 40,
+    "conspiracy_count": 20,
+    "normal_count": 20,
+    "types": [
+      "GOVERNMENT",
+      "HOLLOW_EARTH",
+      "OTHERWORLDLY",
+      "NONE"
+    ],
+    "protopie_index_note": "Use index 0-39 for parseJson paths like phrases.0.text. Use id 1-40 for readable IDs."
+  },
+  "phrases": [
+    {
+      "id": 1,
+      "index": 0,
+      "source_id": 1,
+      "group": "CONSPIRACY",
+      "type": "GOVERNMENT",
+      "gives_card": 1,
+      "text": "Решения принимаются не там, где их показывают по новостям."
+    },
+    {
+      "id": 2,
+      "index": 1,
+      "source_id": 2,
+      "group": "CONSPIRACY",
+      "type": "GOVERNMENT",
+      "gives_card": 1,
+      "text": "Есть структуры, которые не указаны ни в одном официальном документе."
+    },
+    {
+      "id": 3,
+      "index": 2,
+      "source_id": 3,
+      "group": "CONSPIRACY",
+      "type": "GOVERNMENT",
+      "gives_card": 1,
+      "text": "Некоторые данные просто не доходят до публичных отчётов."
+    },
+    {
+      "id": 4,
+      "index": 3,
+      "source_id": 4,
+      "group": "CONSPIRACY",
+      "type": "GOVERNMENT",
+      "gives_card": 1,
+      "text": "Чем громче новость — тем больше шанс, что это отвлечение."
+    },
+    {
+      "id": 5,
+      "index": 4,
+      "source_id": 5,
+      "group": "CONSPIRACY",
+      "type": "GOVERNMENT",
+      "gives_card": 1,
+      "text": "Есть бюджеты, которые невозможно отследить."
+    },
+    {
+      "id": 6,
+      "index": 5,
+      "source_id": 6,
+      "group": "CONSPIRACY",
+      "type": "GOVERNMENT",
+      "gives_card": 1,
+      "text": "Некоторые сотрудники секретных проектов просто исчезают."
+    },
+    {
+      "id": 7,
+      "index": 6,
+      "source_id": 7,
+      "group": "CONSPIRACY",
+      "type": "HOLLOW_EARTH",
+      "gives_card": 1,
+      "text": "Под корой есть пространства, о которых не говорят официально."
+    },
+    {
+      "id": 8,
+      "index": 7,
+      "source_id": 8,
+      "group": "CONSPIRACY",
+      "type": "HOLLOW_EARTH",
+      "gives_card": 1,
+      "text": "Есть карты, на которых отмечены не города, а входы."
+    },
+    {
+      "id": 9,
+      "index": 8,
+      "source_id": 9,
+      "group": "CONSPIRACY",
+      "type": "HOLLOW_EARTH",
+      "gives_card": 1,
+      "text": "Некоторые шахты закрывают, потому что они уходят слишком глубоко."
+    },
+    {
+      "id": 10,
+      "index": 9,
+      "source_id": 10,
+      "group": "CONSPIRACY",
+      "type": "HOLLOW_EARTH",
+      "gives_card": 1,
+      "text": "Подземные тоннели тянутся на тысячи километров."
+    },
+    {
+      "id": 11,
+      "index": 10,
+      "source_id": 11,
+      "group": "CONSPIRACY",
+      "type": "HOLLOW_EARTH",
+      "gives_card": 1,
+      "text": "Есть формы жизни, которые не зависят от солнечного света."
+    },
+    {
+      "id": 12,
+      "index": 11,
+      "source_id": 12,
+      "group": "CONSPIRACY",
+      "type": "HOLLOW_EARTH",
+      "gives_card": 1,
+      "text": "Океан скрывает входы, а не просто глубину."
+    },
+    {
+      "id": 13,
+      "index": 12,
+      "source_id": 13,
+      "group": "CONSPIRACY",
+      "type": "OTHERWORLDLY",
+      "gives_card": 1,
+      "text": "Иногда ты слышишь шаги, хотя рядом никого нет."
+    },
+    {
+      "id": 14,
+      "index": 13,
+      "source_id": 14,
+      "group": "CONSPIRACY",
+      "type": "OTHERWORLDLY",
+      "gives_card": 1,
+      "text": "Есть места, где техника начинает вести себя странно."
+    },
+    {
+      "id": 15,
+      "index": 14,
+      "source_id": 15,
+      "group": "CONSPIRACY",
+      "type": "OTHERWORLDLY",
+      "gives_card": 1,
+      "text": "Некоторые фигуры видно только боковым зрением."
+    },
+    {
+      "id": 16,
+      "index": 15,
+      "source_id": 16,
+      "group": "CONSPIRACY",
+      "type": "OTHERWORLDLY",
+      "gives_card": 1,
+      "text": "Они могут выглядеть как люди, но ведут себя не так."
+    },
+    {
+      "id": 17,
+      "index": 16,
+      "source_id": 17,
+      "group": "CONSPIRACY",
+      "type": "OTHERWORLDLY",
+      "gives_card": 1,
+      "text": "Предметы иногда меняют положение сами по себе."
+    },
+    {
+      "id": 18,
+      "index": 17,
+      "source_id": 18,
+      "group": "CONSPIRACY",
+      "type": "OTHERWORLDLY",
+      "gives_card": 1,
+      "text": "Есть голоса, у которых нет источника."
+    },
+    {
+      "id": 19,
+      "index": 18,
+      "source_id": 19,
+      "group": "CONSPIRACY",
+      "type": "OTHERWORLDLY",
+      "gives_card": 1,
+      "text": "Фотографии иногда показывают лишних людей."
+    },
+    {
+      "id": 20,
+      "index": 19,
+      "source_id": 20,
+      "group": "CONSPIRACY",
+      "type": "OTHERWORLDLY",
+      "gives_card": 1,
+      "text": "Тени могут двигаться отдельно от человека."
+    },
+    {
+      "id": 21,
+      "index": 20,
+      "source_id": 1,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Я немного волнуюсь, честно говоря, не часто в эфир выхожу."
+    },
+    {
+      "id": 22,
+      "index": 21,
+      "source_id": 2,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "У вас тут довольно тихо в студии, я ожидал больше суеты."
+    },
+    {
+      "id": 23,
+      "index": 22,
+      "source_id": 3,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Я добирался сюда дольше, чем рассчитывал."
+    },
+    {
+      "id": 24,
+      "index": 23,
+      "source_id": 4,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Кофе у вас нормальный, кстати."
+    },
+    {
+      "id": 25,
+      "index": 24,
+      "source_id": 5,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Я сначала не был уверен, стоит ли вообще приходить."
+    },
+    {
+      "id": 26,
+      "index": 25,
+      "source_id": 6,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Вы давно этим занимаетесь?"
+    },
+    {
+      "id": 27,
+      "index": 26,
+      "source_id": 7,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Странно слышать свой голос в наушниках."
+    },
+    {
+      "id": 28,
+      "index": 27,
+      "source_id": 8,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Я записал пару мыслей, чтобы не забыть."
+    },
+    {
+      "id": 29,
+      "index": 28,
+      "source_id": 9,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Тут всегда такой свет или сегодня ярче?"
+    },
+    {
+      "id": 30,
+      "index": 29,
+      "source_id": 10,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Я надеюсь, меня нормально слышно."
+    },
+    {
+      "id": 31,
+      "index": 30,
+      "source_id": 11,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Я не привык говорить так долго подряд."
+    },
+    {
+      "id": 32,
+      "index": 31,
+      "source_id": 12,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Вы сигнал проверяли перед эфиром?"
+    },
+    {
+      "id": 33,
+      "index": 32,
+      "source_id": 13,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Иногда слова вылетают из головы в самый неподходящий момент."
+    },
+    {
+      "id": 34,
+      "index": 33,
+      "source_id": 14,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Я немного устал сегодня, если честно."
+    },
+    {
+      "id": 35,
+      "index": 34,
+      "source_id": 15,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Я раньше слушал эту станцию по дороге на работу."
+    },
+    {
+      "id": 36,
+      "index": 35,
+      "source_id": 16,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Надеюсь, я не скажу ничего лишнего."
+    },
+    {
+      "id": 37,
+      "index": 36,
+      "source_id": 17,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Я не знаю, сколько у нас времени."
+    },
+    {
+      "id": 38,
+      "index": 37,
+      "source_id": 18,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "У вас тут уютно, даже неожиданно."
+    },
+    {
+      "id": 39,
+      "index": 38,
+      "source_id": 19,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Я постараюсь говорить по делу."
+    },
+    {
+      "id": 40,
+      "index": 39,
+      "source_id": 20,
+      "group": "NORMAL",
+      "type": "NONE",
+      "gives_card": 0,
+      "text": "Если что, вы меня остановите."
+    }
+  ]
+}
