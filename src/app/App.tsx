@@ -22,6 +22,7 @@ import imgPhraseEmptyBg from "../imports/phrase_empty_bg.png";
 import imgCardGovernment from "../imports/card_government.png";
 import imgCardHollowEarth from "../imports/card_hollow_earth.png";
 import imgCardOtherworldly from "../imports/card_otherworldly.png";
+import audioEnvelopeNotification from "../imports/envelope_notification.mp3";
 import svgPaths from "../imports/1/svg-81hq1u4nej";
 
 // ─── Shake animation keyframes ────────────────────────────────────────────────
@@ -38,13 +39,30 @@ const ANIMATION_CSS = `
 }
 @keyframes phraseFall {
   0%   { transform: translateY(-190px); opacity: 0; }
-  12%  { opacity: 1; }
-  88%  { opacity: 1; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
   100% { transform: translateY(690px); opacity: 0; }
 }
 @keyframes indicatorPulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.32; transform: scale(0.86); }
+}
+@keyframes cardDealToTable {
+  0% {
+    opacity: 0;
+    transform: translate3d(34px, -150px, 0) scale(1.18);
+  }
+  58% {
+    opacity: 1;
+    transform: translate3d(0, 10px, 0) scale(0.98);
+  }
+  78% {
+    transform: translate3d(0, -4px, 0) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
 }
 `;
 
@@ -55,7 +73,10 @@ type IntroPhase =
   | "revealingInitialMessages" // messages animating in, screen_firststage disabled
   | "readingMessages"          // messages visible, screen_firststage enabled
   | "finalIntroState"          // Frame 5 messages visible, Rec active
+  | "gameIntroScrim"           // Rec clicked, waiting for scrim click before game starts
   | "phraseSelection"          // phrase picking game after Rec
+  | "gameOutroScrim"           // 10 selections done, waiting for scrim click
+  | "gameComplete"             // outro scrim dismissed, cards remain visible
   | "testCompleted";           // summary shown
 
 // ─── Animation timing constants ───────────────────────────────────────────────
@@ -68,9 +89,20 @@ const REVEAL_TOTAL_MS  = MSG2_DELAY_MS + MSG_ANIM_MS + 30; // ≈490ms buffer
 
 const HANDWRITE_FONT   = "'SNFBSTRD handwrite', sans-serif";
 const PHRASE_READING   = "может и рад бы забыть";
+const GAME_INTRO_SCRIM = "места под материал маловато....";
+const GAME_OUTRO_SCRIM_LINES = [
+  "фух, этот жуткий тип ушел",
+  "теперь можно спокойно смонтировать материал",
+];
+const TYPEWRITER_MS_PER_CHAR = 34;
 const MAX_SELECTED_PHRASES = 10;
-const PHRASE_SPAWN_MS = 3000;
-const PHRASE_FALL_MS = 9500;
+const PHRASE_FALL_MS = 6500;
+const PHRASE_PATH_PX = 880;
+const PHRASE_MIN_GAP = 120;
+const PHRASE_HEIGHT = 120;
+const PHRASE_SAFE_SPAWN_MS = Math.ceil(((PHRASE_HEIGHT + PHRASE_MIN_GAP) / PHRASE_PATH_PX) * PHRASE_FALL_MS);
+const PHRASE_SPAWN_MS = 200;
+const PHRASE_MAX_ACTIVE = Math.ceil(PHRASE_FALL_MS / PHRASE_SAFE_SPAWN_MS) + 1;
 const PHRASE_WIDTH = 400;
 const PHRASE_LANES = [63.77, 424.43];
 
@@ -85,6 +117,7 @@ interface PhraseRecord {
 
 interface FallingPhrase extends PhraseRecord {
   instanceId: number;
+  startedAt: number;
   left: number;
   duration: number;
   height: number;
@@ -108,7 +141,7 @@ function shuffledPhrases() {
 }
 
 function getPhraseHeight(text: string) {
-  return 120;
+  return PHRASE_HEIGHT;
 }
 
 function getPhraseFontSize(text: string) {
@@ -334,7 +367,49 @@ function Interface() {
   );
 }
 
-function Bg() {
+function GameBg() {
+  return (
+    <div className="absolute h-[544px] left-[13.22px] overflow-clip top-[15px] w-[862px]" data-name="bg">
+      <div
+        className="absolute h-[544.037px] left-[0.16px] top-[-0.13px] w-[861.617px]"
+        style={{
+          backgroundImage:
+            "linear-gradient(90deg, rgba(0, 0, 0, 0.11) 0%, rgba(0, 0, 0, 0.11) 100%), linear-gradient(90deg, rgb(237, 235, 223) 0%, rgb(237, 235, 223) 100%)",
+        }}
+        data-name="color"
+      />
+      <div className="absolute contents left-[-66.72px] top-[72.16px]" data-name="interface">
+        <div
+          className="absolute h-[472.253px] left-[-66.72px] opacity-23 top-[72.16px] w-[996.417px]"
+          data-name="image 98"
+        >
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <img alt="" className="absolute h-[112.06%] left-0 max-w-none top-[-12.06%] w-full" src={imgImage98} />
+          </div>
+        </div>
+        <div
+          className="-translate-x-1/2 absolute bottom-[-0.41px] h-[68.519px] left-[calc(50%-0.63px)] opacity-67 w-[886.832px]"
+          data-name="ChatGPT Image Apr 6, 2026, 02_56_34 PM 1"
+        >
+          <div aria-hidden className="absolute inset-0 pointer-events-none">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.2) 100%), linear-gradient(90deg, rgb(237, 235, 223) 0%, rgb(237, 235, 223) 100%)",
+              }}
+            />
+            <img alt="" className="absolute max-w-none object-bottom opacity-10 size-full" src={imgChatGpt25634Pm1} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Bg({ game }: { game?: boolean }) {
+  if (game) return <GameBg />;
+
   return (
     <div className="absolute h-[544px] left-[13px] overflow-clip top-[15px] w-[874px]" data-name="bg">
       <div
@@ -685,15 +760,24 @@ function CategoryCard({
     : 760 + index * ((1470 - 760 - 152) / Math.max(1, total - 1));
   return (
     <div
-      className="absolute h-[223px] overflow-clip top-[597px] w-[152px]"
+      className="absolute h-[223px] top-[597px] w-[152px]"
       data-name={card.name}
       style={{
+        animation: "cardDealToTable 620ms cubic-bezier(0.19, 1, 0.22, 1) both",
         left,
-        transform: `rotate(${card.rotate})`,
-        boxShadow: "0 12px 24px rgba(0,0,0,0.35)",
+        transformOrigin: "50% 100%",
       }}
     >
-      <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={card.src} />
+      <div
+        className="absolute inset-0 overflow-clip"
+        style={{
+          boxShadow: "0 12px 24px rgba(0,0,0,0.35)",
+          transform: `rotate(${card.rotate})`,
+          transformOrigin: "50% 100%",
+        }}
+      >
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={card.src} />
+      </div>
     </div>
   );
 }
@@ -747,12 +831,60 @@ function PhraseSelectionScene({
   );
 }
 
+function TypewriterText({
+  lines,
+  active,
+  className,
+}: {
+  lines: string[];
+  active: boolean;
+  className?: string;
+}) {
+  const text = lines.join("\n");
+  const [visibleCount, setVisibleCount] = useState(active ? 0 : text.length);
+
+  useEffect(() => {
+    if (!active) {
+      setVisibleCount(text.length);
+      return;
+    }
+
+    setVisibleCount(0);
+    if (text.length === 0) return;
+
+    const id = setInterval(() => {
+      setVisibleCount((current) => {
+        if (current >= text.length) {
+          clearInterval(id);
+          return current;
+        }
+        return current + 1;
+      });
+    }, TYPEWRITER_MS_PER_CHAR);
+
+    return () => clearInterval(id);
+  }, [active, text]);
+
+  const visibleText = text.slice(0, visibleCount);
+  const visibleLines = visibleText.split("\n");
+
+  return (
+    <div className={className} style={{ fontFamily: HANDWRITE_FONT }}>
+      {lines.map((line, index) => (
+        <p className="leading-[1.55] mb-0" key={`${line}-${index}`}>
+          {visibleLines[index] ?? ""}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 // ─── Character phrase scrim ───────────────────────────────────────────────────
 function CharacterPhrase({ phrase, visible }: { phrase: string; visible: boolean }) {
   return (
     <div
       className="-translate-x-1/2 -translate-y-1/2 absolute h-[92px] left-[calc(50%-0.45px)] overflow-clip top-[calc(50%+276px)] w-[1600px]"
-      style={{ visibility: visible ? "visible" : "hidden" }}
+      style={{ pointerEvents: "none", visibility: visible ? "visible" : "hidden" }}
       data-name="scrim"
     >
       <div
@@ -768,8 +900,40 @@ function CharacterPhrase({ phrase, visible }: { phrase: string; visible: boolean
         className="-translate-x-1/2 -translate-y-1/2 absolute flex flex-col justify-center leading-[0] left-1/2 not-italic text-[#edebdf] text-[24px] text-center top-[calc(50%+0.5px)] tracking-[-0.48px] whitespace-nowrap"
         style={{ fontFamily: HANDWRITE_FONT }}
       >
-        <p className="leading-[1.55]">{phrase}</p>
+        <TypewriterText active={visible} lines={[phrase]} />
       </div>
+    </div>
+  );
+}
+
+function GameScrim({
+  lines,
+  onClick,
+}: {
+  lines: string[];
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <div
+      className="-translate-x-1/2 -translate-y-1/2 absolute h-[92px] left-[calc(50%-0.45px)] overflow-clip top-[calc(50%+276px)] w-[1600px]"
+      data-name="scrim"
+      onClick={onClick}
+      style={{ cursor: "pointer", zIndex: 80 }}
+    >
+      <div
+        className="-translate-x-1/2 -translate-y-1/2 absolute h-[92px] left-1/2 top-1/2 w-[1600px]"
+        data-name="monolog_scrim"
+        style={{
+          filter: "blur(8.25px)",
+          backgroundImage:
+            "url(\"data:image/svg+xml;utf8,<svg viewBox='0 0 1600 92' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none'><rect x='0' y='0' height='100%25' width='100%25' fill='url(%23grad)' opacity='1'/><defs><radialGradient id='grad' gradientUnits='userSpaceOnUse' cx='0' cy='0' r='10' gradientTransform='matrix(80 0 0 73.549 800 46)'><stop stop-color='rgba(0,0,0,1)' offset='0.73097'/><stop stop-color='rgba(6,6,6,0.9375)' offset='0.74779'/><stop stop-color='rgba(13,13,13,0.875)' offset='0.7646'/><stop stop-color='rgba(26,26,26,0.75)' offset='0.79823'/><stop stop-color='rgba(51,51,51,0.5)' offset='0.86549'/><stop stop-color='rgba(102,102,102,0)' offset='1'/></radialGradient></defs></svg>\")",
+        }}
+      />
+      <TypewriterText
+        active
+        className="-translate-x-1/2 -translate-y-1/2 [word-break:break-word] absolute flex flex-col justify-center leading-[0] left-1/2 not-italic text-[#edebdf] text-[24px] text-center top-1/2 tracking-[-0.48px] w-[672px]"
+        lines={lines}
+      />
     </div>
   );
 }
@@ -913,6 +1077,7 @@ export default function App() {
   // ── Envelope animation state ───────────────────────────────────────────────
   const [envelopeShaking, setEnvelopeShaking] = useState(false);
   const [badgeIn, setBadgeIn] = useState(false); // triggers badge CSS transition
+  const envelopeAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // ── Message reveal state ───────────────────────────────────────────────────
   const [msg1In, setMsg1In] = useState(false);
@@ -940,9 +1105,44 @@ export default function App() {
     const id = setTimeout(fn, ms);
     timersRef.current.push(id);
   }, []);
+
+  useEffect(() => {
+    if (!envelopeAudioRef.current) {
+      envelopeAudioRef.current = new Audio(audioEnvelopeNotification);
+      envelopeAudioRef.current.loop = true;
+      envelopeAudioRef.current.volume = 0.55;
+    }
+
+    const audio = envelopeAudioRef.current;
+
+    if (envelopeShaking) {
+      audio.currentTime = 0;
+      audio.play().catch(() => {
+        // Browsers may block sound before the first user gesture.
+      });
+      return;
+    }
+
+    audio.pause();
+    audio.currentTime = 0;
+  }, [envelopeShaking]);
+
+  useEffect(() => {
+    return () => {
+      const audio = envelopeAudioRef.current;
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, []);
+
   const spawnPhrase = useCallback(() => {
     setActivePhrases((current) => {
-      if (current.length >= 2) return current;
+      if (current.length >= PHRASE_MAX_ACTIVE) return current;
+      const now = Date.now();
+      const hasUnsafeGap = current.some((phrase) => now - phrase.startedAt < PHRASE_SAFE_SPAWN_MS);
+      if (hasUnsafeGap) return current;
+
       if (phraseDeckRef.current.length === 0) {
         phraseDeckRef.current = shuffledPhrases();
       }
@@ -957,11 +1157,7 @@ export default function App() {
       }
       if (!next) return current;
 
-      const occupiedLanes = new Set(current.map((phrase) => phrase.left));
       let laneIndex = phraseLaneRef.current % PHRASE_LANES.length;
-      if (occupiedLanes.has(PHRASE_LANES[laneIndex])) {
-        laneIndex = (laneIndex + 1) % PHRASE_LANES.length;
-      }
       phraseLaneRef.current = laneIndex + 1;
 
       phraseInstanceRef.current += 1;
@@ -970,6 +1166,7 @@ export default function App() {
         {
           ...next,
           instanceId: phraseInstanceRef.current,
+          startedAt: now,
           left: PHRASE_LANES[laneIndex],
           duration: PHRASE_FALL_MS,
           height: getPhraseHeight(next.text),
@@ -981,7 +1178,12 @@ export default function App() {
 
   // ── Derived visual values ──────────────────────────────────────────────────
   const isAlertIcon   = phase === "envelopeAlert";
+  const isGameIntroScrim = phase === "gameIntroScrim";
   const isPhraseSelection = phase === "phraseSelection";
+  const isGameOutroScrim = phase === "gameOutroScrim";
+  const isGameComplete = phase === "gameComplete";
+  const isGameScene = isGameIntroScrim || isPhraseSelection || isGameOutroScrim || isGameComplete;
+  const isGameBackground = isGameIntroScrim || isPhraseSelection;
   const subtractImg   = showFinalMessages      ? imgSubtractB
                       : isAlertIcon            ? imgSubtractB
                       : imgSubtractA;
@@ -1024,6 +1226,7 @@ export default function App() {
   useEffect(() => {
     if (phase === "phraseSelection" && selectedPhraseCount >= MAX_SELECTED_PHRASES) {
       setActivePhrases([]);
+      setPhase("gameOutroScrim");
     }
   }, [phase, selectedPhraseCount]);
 
@@ -1071,11 +1274,22 @@ export default function App() {
 
       e.stopPropagation();
 
+      if (phase === "gameIntroScrim") {
+        setPhase("phraseSelection");
+        return;
+      }
+
+      if (phase === "gameOutroScrim") {
+        setPhase("gameComplete");
+        return;
+      }
+
       switch (phase) {
         case "waitingForAlert":
         case "revealingInitialMessages":
         case "finalIntroState":
         case "phraseSelection":
+        case "gameComplete":
         case "testCompleted":
           return;
 
@@ -1110,7 +1324,13 @@ export default function App() {
   const handleRecClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (phase === "testCompleted" || phase === "phraseSelection") return;
+      if (
+        phase === "testCompleted" ||
+        phase === "gameIntroScrim" ||
+        phase === "phraseSelection" ||
+        phase === "gameOutroScrim" ||
+        phase === "gameComplete"
+      ) return;
 
       if (phase !== "finalIntroState" && phase !== "testCompleted") {
         setMetrics(prev => ({ ...prev, prematureRecClicks: prev.prematureRecClicks + 1 }));
@@ -1123,7 +1343,7 @@ export default function App() {
       setAwardedCards([]);
       phraseDeckRef.current = shuffledPhrases();
       phraseLaneRef.current = 0;
-      setPhase("phraseSelection");
+      setPhase("gameIntroScrim");
       setMetrics(prev => {
         const timings = [...prev.stateTimings];
         timings[3] = now - (prev.stateEntryTimes[3] || now);
@@ -1136,6 +1356,18 @@ export default function App() {
     },
     [phase]
   );
+
+  const handleGameIntroScrimClick = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (phase !== "gameIntroScrim") return;
+    setPhase("phraseSelection");
+  }, [phase]);
+
+  const handleGameOutroScrimClick = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (phase !== "gameOutroScrim") return;
+    setPhase("gameComplete");
+  }, [phase]);
 
   // ── Tip click ──────────────────────────────────────────────────────────────
   const handleTipClick = useCallback(
@@ -1191,6 +1423,16 @@ export default function App() {
 
   // ── Global misclick ────────────────────────────────────────────────────────
   const handleGlobalClick = useCallback(() => {
+    if (phase === "gameIntroScrim") {
+      setPhase("phraseSelection");
+      return;
+    }
+
+    if (phase === "gameOutroScrim") {
+      setPhase("gameComplete");
+      return;
+    }
+
     if (phase === "testCompleted" || showSummary) return;
     setMetrics(prev => ({ ...prev, misclicks: prev.misclicks + 1 }));
   }, [phase, showSummary]);
@@ -1258,6 +1500,8 @@ export default function App() {
           />
         </div>
 
+        {(isGameIntroScrim || isPhraseSelection) && <HeroMushroom />}
+
         {/* Left fade overlay */}
         <div className="absolute h-[346.838px] left-0 top-[64px] w-[661px]" data-name="fade">
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -1268,8 +1512,6 @@ export default function App() {
             />
           </div>
         </div>
-
-        {isPhraseSelection && <HeroMushroom />}
 
         {/* Desk shelf */}
         <div className="absolute flex h-[50px] items-center justify-center left-[-3px] top-[586px] w-[661px]">
@@ -1292,10 +1534,10 @@ export default function App() {
           onClick={handleScreenClick}
           style={{ cursor: screenCursor }}
         >
-          <Bg />
+          <Bg game={isGameBackground} />
           <Screen subtractImg={subtractImg} />
 
-          {!isPhraseSelection && (
+          {!isGameScene && (
             <MailIconAnimated
               isAlert={isAlertIcon}
               badgeIn={badgeIn}
@@ -1310,7 +1552,7 @@ export default function App() {
           {showMessages1 && <MonitorMessages2 msg1In={msg1In} msg2In={msg2In} />}
 
           {/* Final messages — instant */}
-          {showFinalMessages && !isPhraseSelection && <MonitorMessages3 />}
+          {showFinalMessages && !isGameScene && <MonitorMessages3 />}
           {isPhraseSelection && (
             <PhraseSelectionScene
               activePhrases={activePhrases}
@@ -1321,7 +1563,15 @@ export default function App() {
           )}
         </div>
 
-        {isPhraseSelection && <AwardedCards cards={awardedCards} />}
+        {isGameScene && <AwardedCards cards={awardedCards} />}
+
+        {isGameIntroScrim && (
+          <GameScrim lines={[GAME_INTRO_SCRIM]} onClick={handleGameIntroScrimClick} />
+        )}
+
+        {isGameOutroScrim && (
+          <GameScrim lines={GAME_OUTRO_SCRIM_LINES} onClick={handleGameOutroScrimClick} />
+        )}
 
         {/* Character phrase scrim */}
         <CharacterPhrase phrase={PHRASE_READING} visible={phraseVisible} />
