@@ -23,6 +23,34 @@ import imgCardGovernment from "../imports/card_government.png";
 import imgCardHollowEarth from "../imports/card_hollow_earth.png";
 import imgCardOtherworldly from "../imports/card_otherworldly.png";
 import audioEnvelopeNotification from "../imports/envelope_notification.mp3";
+import imgSecondStageBackgroundFull from "../imports/second_stage_background_full.png";
+import imgSecondStageKeyboard from "../imports/second_stage_keyboard.png";
+import imgSecondStageInterfaceLeft from "../imports/second_stage_interface_left.png";
+import imgSecondStageWaveWindow from "../imports/second_stage_wave_window.png";
+import imgSecondStageInterfaceRight from "../imports/second_stage_interface_right.png";
+import imgSecondStageBottomLeft from "../imports/second_stage_bottom_left.png";
+import imgSecondStageBottomRight from "../imports/second_stage_bottom_right.png";
+import imgSecondStageSubtract from "../imports/second_stage_subtract.png";
+import imgSecondStageDownloadIcon from "../imports/second_stage_download_icon.svg";
+import imgGuideImage110 from "../imports/guide_image_110.png";
+import imgGuideImage111 from "../imports/guide_image_111.png";
+import imgGuideArrowSmall from "../imports/guide_arrow_small.png";
+import imgGuideArrowLarge from "../imports/guide_arrow_large.png";
+import imgGuideEllipse52 from "../imports/guide_ellipse_52.png";
+import imgGuideEllipse53 from "../imports/guide_ellipse_53.png";
+import imgGuidePlus from "../imports/guide_plus.png";
+import imgGuideX from "../imports/guide_x.png";
+import imgGuidePlusCard from "../imports/guide_plus_card.png";
+import imgGuidePlusHype from "../imports/guide_plus_hype.png";
+import imgGuideFirst from "../imports/guide_first.png";
+import imgGuideSecond from "../imports/guide_second.png";
+import imgFolderGovernment from "../imports/folder_government.png";
+import imgFolderHollowEarth from "../imports/folder_hollow_earth.png";
+import imgFolderOtherworldly from "../imports/folder_otherworldly.png";
+import imgZoneAddEmpty from "../imports/zone_add_empty.png";
+import imgZoneAddGovernment from "../imports/zone_add_government.png";
+import imgZoneAddHollowEarth from "../imports/zone_add_hollow_earth.png";
+import imgZoneAddOtherworldly from "../imports/zone_add_otherworldly.png";
 import svgPaths from "../imports/1/svg-81hq1u4nej";
 
 // ─── Shake animation keyframes ────────────────────────────────────────────────
@@ -64,6 +92,29 @@ const ANIMATION_CSS = `
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
+@keyframes firstStageFadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes secondStageFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes folderBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.46; }
+}
+.second-stage-preview-card {
+  transform: translateY(0) scale(1);
+  transform-origin: bottom center;
+  transition: transform 180ms ease-out, filter 180ms ease-out;
+  z-index: 24;
+}
+.second-stage-preview-card:hover {
+  transform: translateY(-96px) scale(1.45);
+  filter: drop-shadow(0 0 18px rgba(226, 57, 57, 0.9));
+  z-index: 80;
+}
 `;
 
 // ─── Interaction state machine ────────────────────────────────────────────────
@@ -77,6 +128,9 @@ type IntroPhase =
   | "phraseSelection"          // phrase picking game after Rec
   | "gameOutroScrim"           // 10 selections done, waiting for scrim click
   | "gameComplete"             // outro scrim dismissed, cards remain visible
+  | "secondStageAlert"         // second scene, envelope alert visible
+  | "secondStageMessages"      // second scene messages visible after envelope click
+  | "secondStageGame"          // second scene card/folder game
   | "testCompleted";           // summary shown
 
 // ─── Animation timing constants ───────────────────────────────────────────────
@@ -86,6 +140,7 @@ const MSG1_DELAY_MS    = 0;    // first message appears immediately on click
 const MSG2_DELAY_MS    = 200;  // second message stagger
 const MSG_ANIM_MS      = 260;  // duration of each message fade+slide transition
 const REVEAL_TOTAL_MS  = MSG2_DELAY_MS + MSG_ANIM_MS + 30; // ≈490ms buffer
+const SCENE_FADE_MS    = 520;
 
 const HANDWRITE_FONT   = "'SNFBSTRD handwrite', sans-serif";
 const PHRASE_READING   = "может и рад бы забыть";
@@ -94,6 +149,14 @@ const GAME_OUTRO_SCRIM_LINES = [
   "фух, этот жуткий тип ушел",
   "теперь можно спокойно смонтировать материал",
 ];
+const SECOND_STAGE_MESSAGE_1 = {
+  redStart: "Как прошло? ",
+  black: "подумал, что ПОСЛЕ ДОЛГОГО ПЕРЕРЫВА может ВЫЙТИ тухловато, поэтому подкину тебе ",
+  redMiddle: "темок, которые можно ",
+  redEnd: " с твоими",
+  blackEnd: "свести",
+};
+const SECOND_STAGE_MESSAGE_2 = "НО ЭТО ПЕРВЫЙ И ПОСЛЕДНИЙ РАЗ!!!";
 const TYPEWRITER_MS_PER_CHAR = 34;
 const MAX_SELECTED_PHRASES = 10;
 const PHRASE_FALL_MS = 6500;
@@ -105,9 +168,39 @@ const PHRASE_SPAWN_MS = 200;
 const PHRASE_MAX_ACTIVE = Math.ceil(PHRASE_FALL_MS / PHRASE_SAFE_SPAWN_MS) + 1;
 const PHRASE_WIDTH = 400;
 const PHRASE_LANES = [63.77, 424.43];
+const SECOND_STAGE_GAME_SECONDS = 45;
+const HYPE_TARGET_POINTS = 5;
+const HYPE_MAX = HYPE_TARGET_POINTS;
+const HYPE_START = 0;
+const HYPE_WIN_THRESHOLD = HYPE_MAX * 0.5;
+const HYPE_GAIN = 1;
+const FOLDER_LIFETIME_MS = 7600;
+const FOLDER_BLINK_MS = 2600;
+const ADD_CARD_REPLACE_MS = 2200;
+const SECOND_STAGE_CARD_WIDTH = 130;
+const SECOND_STAGE_CARD_HEIGHT = 190;
+const SECOND_STAGE_CARD_GAP = 82;
+const MAX_VISIBLE_FOLDERS = 2;
+const FOLDER_STAGE_LEFT = 184.97;
+const FOLDER_WITH_ADD_SLOT_WIDTH = 325;
+const FOLDER_SCREEN_WIDTH = 1185;
+const FOLDER_SCREEN_RIGHT_GAP = 56;
 
 type CardCategory = "GOVERNMENT" | "HOLLOW_EARTH" | "OTHERWORLDLY";
 type PhraseType = CardCategory | "NONE";
+type SecondStageResult = "WIN" | "LOSE" | null;
+
+interface SecondStageFolder {
+  id: number;
+  category: CardCategory;
+  state: "empty" | "waiting" | "hidden";
+  mainCard?: CardCategory;
+  addedCard?: CardCategory;
+  expiresAt: number;
+  blinkAt: number;
+  left: number;
+  top: number;
+}
 
 interface PhraseRecord {
   id: number;
@@ -130,6 +223,36 @@ const CARD_IMAGES: Record<CardCategory, { src: string; name: string; rotate: str
   OTHERWORLDLY: { src: imgCardOtherworldly, name: "OtherWorld_Card", rotate: "-1deg" },
 };
 
+const FOLDER_IMAGES: Record<CardCategory, { src: string; zone: string; name: string; label: string }> = {
+  GOVERNMENT: {
+    src: imgFolderGovernment,
+    zone: imgZoneAddGovernment,
+    name: "Goverment_Folder",
+    label: "правительство",
+  },
+  HOLLOW_EARTH: {
+    src: imgFolderHollowEarth,
+    zone: imgZoneAddHollowEarth,
+    name: "HollowEarth_Folder",
+    label: "полая земля",
+  },
+  OTHERWORLDLY: {
+    src: imgFolderOtherworldly,
+    zone: imgZoneAddOtherworldly,
+    name: "OtherWorld_Folder",
+    label: "потустороннее",
+  },
+};
+
+const CATEGORY_ORDER: CardCategory[] = ["GOVERNMENT", "OTHERWORLDLY", "HOLLOW_EARTH"];
+const FOLDER_POSITIONS = [
+  { left: 24, top: 12 },
+  {
+    left: FOLDER_SCREEN_WIDTH - FOLDER_STAGE_LEFT - FOLDER_WITH_ADD_SLOT_WIDTH - FOLDER_SCREEN_RIGHT_GAP,
+    top: 98,
+  },
+];
+
 const PHRASE_POOL: PhraseRecord[] = (phrasesData as { phrases: PhraseRecord[] }).phrases.map((phrase) => ({
   id: phrase.id,
   type: phrase.type,
@@ -149,6 +272,95 @@ function getPhraseFontSize(text: string) {
   if (text.length > 82) return 16;
   if (text.length > 58) return 18;
   return 20;
+}
+
+function randomCardCategory(): CardCategory {
+  return CATEGORY_ORDER[Math.floor(Math.random() * CATEGORY_ORDER.length)];
+}
+
+function randomFolderLifetime() {
+  return FOLDER_LIFETIME_MS + Math.floor(Math.random() * 3600);
+}
+
+function shuffledFolderPositions() {
+  return [...FOLDER_POSITIONS].sort(() => Math.random() - 0.5);
+}
+
+function folderPositionKey(position: { left: number; top: number }) {
+  return `${position.left}:${position.top}`;
+}
+
+function pickFreeFolderPosition(folders: SecondStageFolder[], fallback: { left: number; top: number }) {
+  const occupied = new Set(
+    folders
+      .filter((folder) => folder.state !== "hidden")
+      .map((folder) => folderPositionKey(folder))
+  );
+  const freePositions = FOLDER_POSITIONS.filter((position) => !occupied.has(folderPositionKey(position)));
+  if (freePositions.length === 0) return fallback;
+  return freePositions[Math.floor(Math.random() * freePositions.length)];
+}
+
+function createSecondStageFolders(now = Date.now()): SecondStageFolder[] {
+  const positions = shuffledFolderPositions();
+  return [...CATEGORY_ORDER].sort(() => Math.random() - 0.5).map((category, index) => {
+    const lifetime = randomFolderLifetime();
+    const position = positions[index % positions.length];
+    const visible = index < MAX_VISIBLE_FOLDERS;
+    return {
+      id: now + index,
+      category,
+      state: visible ? "empty" : "hidden",
+      expiresAt: visible ? now + lifetime : now + 900 + Math.floor(Math.random() * 900),
+      blinkAt: visible ? now + lifetime - FOLDER_BLINK_MS : Number.POSITIVE_INFINITY,
+      left: position.left,
+      top: position.top,
+    };
+  });
+}
+
+function refreshSecondStageFolder(
+  folder: SecondStageFolder,
+  now = Date.now(),
+  position = FOLDER_POSITIONS[Math.floor(Math.random() * FOLDER_POSITIONS.length)]
+): SecondStageFolder {
+  const lifetime = randomFolderLifetime();
+  return {
+    id: now + Math.random(),
+    category: randomCardCategory(),
+    state: "empty",
+    mainCard: undefined,
+    addedCard: undefined,
+    expiresAt: now + lifetime,
+    blinkAt: now + lifetime - FOLDER_BLINK_MS,
+    left: position.left,
+    top: position.top,
+  };
+}
+
+function hideSecondStageFolder(folder: SecondStageFolder, now = Date.now()): SecondStageFolder {
+  return {
+    ...folder,
+    state: "hidden",
+    mainCard: undefined,
+    addedCard: undefined,
+    expiresAt: now + 850 + Math.floor(Math.random() * 900),
+    blinkAt: Number.POSITIVE_INFINITY,
+  };
+}
+
+function resolveSecondStageCombo(main: CardCategory, added: CardCategory) {
+  if (main === "OTHERWORLDLY" && added === "HOLLOW_EARTH") return { hype: HYPE_GAIN };
+  if (main === "OTHERWORLDLY" && added === "GOVERNMENT") return { hype: HYPE_GAIN };
+  if (main === "GOVERNMENT" && added === "OTHERWORLDLY") return { card: randomCardCategory() };
+  if (main === "GOVERNMENT" && added === "HOLLOW_EARTH") return { hype: HYPE_GAIN };
+  if (main === "HOLLOW_EARTH" && added === "GOVERNMENT") return { card: "HOLLOW_EARTH" as CardCategory };
+  if (main === "HOLLOW_EARTH" && added === "OTHERWORLDLY") return { card: "HOLLOW_EARTH" as CardCategory };
+  return {};
+}
+
+function getSecondStageResult(hype: number): Exclude<SecondStageResult, null> {
+  return hype > HYPE_WIN_THRESHOLD ? "WIN" : "LOSE";
 }
 
 // ─── Test metrics ─────────────────────────────────────────────────────────────
@@ -479,11 +691,13 @@ function MouseLeftClick() {
 // isShaking   — applies the looping shake animation
 // onEnvClick  — click handler active only during envelopeAlert phase
 function MailIconAnimated({
+  className,
   isAlert,
   badgeIn,
   isShaking,
   onEnvClick,
 }: {
+  className?: string;
   isAlert: boolean;
   badgeIn: boolean;
   isShaking: boolean;
@@ -496,7 +710,7 @@ function MailIconAnimated({
   if (isAlert) {
     return (
       <div
-        className="absolute bottom-[428.06px] h-[52px] left-[67.22px] overflow-clip w-[64px]"
+        className={className || "absolute bottom-[428.06px] h-[52px] left-[67.22px] overflow-clip w-[64px]"}
         data-name="icon_mail"
         onClick={onEnvClick}
         style={{ ...shakeStyle, cursor: onEnvClick ? "pointer" : "default" }}
@@ -544,7 +758,7 @@ function MailIconAnimated({
   // Default / plain state (Frame 1)
   return (
     <div
-      className="absolute bottom-[431.06px] h-[46px] left-[67.22px] overflow-clip w-[58px]"
+      className={className || "absolute bottom-[431.06px] h-[46px] left-[67.22px] overflow-clip w-[58px]"}
       data-name="icon_mail"
       style={shakeStyle}
     >
@@ -795,6 +1009,704 @@ function AwardedCards({ cards }: { cards: CardCategory[] }) {
         />
       ))}
     </>
+  );
+}
+
+function SecondStageCards({ cards }: { cards: CardCategory[] }) {
+  const visibleCards = cards.slice(0, MAX_SELECTED_PHRASES);
+  return (
+    <>
+      {visibleCards.map((category, index) => {
+        const card = CARD_IMAGES[category];
+        return (
+          <div
+            className="absolute h-[190px] top-[630px] w-[130px] second-stage-preview-card"
+            data-name={card.name}
+            key={`second-${category}-${index}`}
+            style={{ left: 528.83 + index * SECOND_STAGE_CARD_GAP }}
+          >
+            <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={card.src} />
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function SecondStageKeyboard({
+  onPlayClick,
+  onTipClick,
+  playEnabled,
+}: {
+  onPlayClick: (e: React.MouseEvent) => void;
+  onTipClick: (e: React.MouseEvent) => void;
+  playEnabled: boolean;
+}) {
+  return (
+    <div className="absolute h-[196px] left-[-0.67px] overflow-clip top-[650.82px] w-[438px]" data-name="keyboard">
+      <div className="absolute h-[196px] left-0 top-0 w-[438px]" data-name="image 109">
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgSecondStageKeyboard} />
+      </div>
+      <button
+        aria-label="Start second stage game"
+        className="absolute h-[101px] left-[310px] overflow-clip top-[70px] w-[99px]"
+        data-name="btns"
+        disabled={!playEnabled}
+        onClick={onPlayClick}
+        style={{ cursor: playEnabled ? "pointer" : "default", opacity: playEnabled ? 1 : 0.84 }}
+        type="button"
+      >
+        <div className="absolute h-[95.347px] left-[2.26px] top-[2.1px] w-[95.229px]">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" height="95.347" src={imgEllipse47} width="95.229" />
+        </div>
+        <div className="absolute h-[104.625px] left-[-4.88px] top-[-2.25px] w-[108.75px]" data-name="ChatGPT Image Apr 6, 2026, 01_19_05 PM 2">
+          <img alt="" className="absolute inset-0 max-w-none object-bottom pointer-events-none size-full" src={imgRecMic} />
+        </div>
+        <div
+          className="-translate-y-1/2 [word-break:break-word] absolute flex flex-col justify-center leading-[0] left-[calc(50%-21.5px)] not-italic text-[#171717] text-[24px] top-[24.06px] tracking-[-0.48px] whitespace-nowrap"
+          style={{ fontFamily: "'Gagalin', sans-serif" }}
+        >
+          <p className="leading-none">PLAY</p>
+        </div>
+      </button>
+      <div
+        aria-label="Show test results"
+        className="absolute flex h-[27.116px] items-center justify-center left-[161.24px] top-[134.5px] w-[127.148px]"
+        data-name="tip"
+        onClick={onTipClick}
+        role="button"
+        style={{ cursor: "pointer" }}
+        tabIndex={0}
+      >
+        <div className="flex-none rotate-[0.45deg]">
+          <div className="bg-[#3d3d3d] h-[26.122px] opacity-15 relative w-[126.947px]" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SecondStageGuide({ onClose }: { onClose: (e: React.MouseEvent) => void }) {
+  return (
+    <div
+      className="absolute h-[573px] left-0 top-0 w-[1185px] z-[30]"
+      data-name="guide"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="absolute bg-black/30 h-[558.911px] left-[0.78px] top-0 w-[1184.225px]" />
+      <div className="absolute h-[399.491px] left-[202.39px] top-[79.71px] w-[780.217px]">
+        <div className="absolute bg-[#d3d1c7] h-[48.181px] left-0 top-0 w-full" />
+        <div className="absolute bg-[#d3d1c7] h-[351.31px] left-[1.11px] top-[48.18px] w-[778.112px]" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <img alt="" className="absolute h-[106.27%] left-[-1.19%] max-w-none top-0 w-[102.45%]" src={imgSecondStageInterfaceRight} />
+        </div>
+        <button
+          aria-label="Close guide"
+          className="absolute flex items-center justify-center right-[22px] size-[32px] top-[8px] z-[4]"
+          onClick={onClose}
+          style={{ cursor: "pointer" }}
+          type="button"
+        >
+          <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideX} />
+        </button>
+      </div>
+
+      <div className="absolute h-[224.5px] left-[277.32px] top-[177.75px] w-[179.5px] z-[31]" data-name="guide_stack">
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgGuideImage110} />
+      </div>
+      <div className="absolute h-[191.5px] left-[502.32px] top-[194.25px] w-[248.5px] z-[31]" data-name="guide_slot">
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgGuideImage111} />
+      </div>
+      <div className="absolute h-[136.336px] left-[767.07px] top-[226.63px] w-[92.929px] z-[32]" data-name="HollowEarth_Card">
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgCardHollowEarth} />
+      </div>
+      <div className="absolute h-[136.336px] left-[816.42px] top-[191.93px] w-[92.929px] z-[31]" data-name="OtherWorld_Card">
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgCardOtherworldly} />
+      </div>
+      <div className="absolute h-[39.674px] left-[464.99px] top-[265.28px] w-[48.08px] z-[33]" data-name="arrow_small">
+        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideArrowSmall} />
+      </div>
+      <div className="absolute flex h-[43.636px] items-center justify-center left-[929.29px] top-[418.18px] w-[90.56px] z-[33]">
+        <div className="flex-none rotate-[-92.34deg]">
+          <div className="h-[89.002px] relative w-[40.042px]" data-name="arrow_large">
+            <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideArrowLarge} />
+          </div>
+        </div>
+      </div>
+      <div className="absolute left-[473.17px] size-[57px] top-[208.38px] z-[45]" data-name="first_icon">
+        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideFirst} />
+      </div>
+      <div className="absolute left-[674.22px] size-[60px] top-[426.78px] z-[45]" data-name="second_icon">
+        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideSecond} />
+      </div>
+      <div className="absolute h-[39.5px] left-[736.64px] top-[197.5px] w-[65.5px] z-[45]" data-name="plus_card_icon">
+        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuidePlusCard} />
+      </div>
+      <div className="absolute h-[22.5px] left-[754.38px] top-[177.75px] w-[58.5px] z-[45]" data-name="plus_hype_icon">
+        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuidePlusHype} />
+      </div>
+
+      <div className="absolute contents left-[473.17px] size-[56.899px] top-[208.38px]" data-name="first">
+        <div className="absolute flex items-center justify-center left-[473.17px] size-[56.899px] top-[208.38px] z-[33]">
+          <div className="flex-none rotate-[21.12deg]">
+            <div className="relative size-[44px]">
+              <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideEllipse52} />
+            </div>
+          </div>
+        </div>
+        <div className="-translate-y-1/2 absolute flex h-[35.074px] items-center justify-center left-[calc(50%-310.24px)] top-[calc(50%-212.27px)] w-[25.632px] z-[34]">
+          <div className="flex-none rotate-[21.12deg]">
+            <div
+              className="[word-break:break-word] flex flex-col h-[31.719px] justify-center leading-[0] not-italic relative text-[#171717] text-[24.771px] tracking-[-0.495px] w-[15.225px]"
+              style={{ fontFamily: HANDWRITE_FONT }}
+            >
+              <p className="leading-none">1</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="absolute contents left-[674.22px] size-[59.824px] top-[426.78px]" data-name="second">
+        <div className="absolute flex items-center justify-center left-[674.22px] size-[59.824px] top-[426.78px] z-[33]">
+          <div className="flex-none rotate-[-29.03deg]">
+            <div className="relative size-[44px]">
+              <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideEllipse53} />
+            </div>
+          </div>
+        </div>
+        <div className="-translate-y-1/2 absolute flex h-[28.403px] items-center justify-center left-[calc(50%-108.36px)] top-[calc(50%+7.04px)] w-[25.359px] z-[34]">
+          <div className="flex-none rotate-[-29.03deg]">
+            <div
+              className="[word-break:break-word] flex flex-col h-[23.682px] justify-center leading-[0] not-italic relative text-[#171717] text-[26.213px] tracking-[-0.524px] w-[15.859px]"
+              style={{ fontFamily: HANDWRITE_FONT }}
+            >
+              <p className="leading-none">2</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute flex h-[39.15px] items-center justify-center left-[736.64px] top-[197.5px] w-[65.333px] z-[34]">
+        <div className="flex-none rotate-[-20.75deg]">
+          <div className="content-stretch flex gap-[3px] items-center relative" data-name="+card">
+            <div className="h-[17.972px] relative shrink-0 w-[18.056px]" data-name="plus">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgGuidePlus} />
+            </div>
+            <div
+              className="[word-break:break-word] flex flex-col justify-center leading-[0] not-italic relative shrink-0 text-[#171717] text-[16px] tracking-[-0.32px] whitespace-nowrap"
+              style={{ fontFamily: "'Gagalin', sans-serif" }}
+            >
+              <p className="leading-none">карта</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="absolute flex h-[22.261px] items-center justify-center left-[754.38px] top-[177.75px] w-[58.258px] z-[34]">
+        <div className="flex-none rotate-[4.36deg]">
+          <div className="content-stretch flex gap-[3px] items-center relative" data-name="+hype">
+            <div className="h-[17.972px] relative shrink-0 w-[18.056px]" data-name="plus">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgGuidePlus} />
+            </div>
+            <div
+              className="[word-break:break-word] flex flex-col justify-center leading-[0] not-italic relative shrink-0 text-[#171717] text-[16px] tracking-[-0.32px] whitespace-nowrap"
+              style={{ fontFamily: "'Gagalin', sans-serif" }}
+            >
+              <p className="leading-none">хайп</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CleanSecondStageGuide({ onClose }: { onClose: (e: React.MouseEvent) => void }) {
+  return (
+    <div
+      className="absolute h-[573px] left-0 top-0 w-[1185px] z-[30]"
+      data-name="guide_clean"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="absolute bg-black/30 h-[558.911px] left-[0.78px] top-0 w-[1184.225px]" />
+      <div className="absolute h-[399.491px] left-[202.39px] top-[79.71px] w-[780.217px]">
+        <div className="absolute bg-[#d3d1c7] h-full left-0 top-0 w-full" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <img alt="" className="absolute h-[106.27%] left-[-1.19%] max-w-none top-0 w-[102.45%]" src={imgSecondStageInterfaceRight} />
+        </div>
+        <button
+          aria-label="Close guide"
+          className="absolute right-[22px] size-[32px] top-[8px] z-[6]"
+          onClick={onClose}
+          style={{ cursor: "pointer" }}
+          type="button"
+        >
+          <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideX} />
+        </button>
+      </div>
+
+      <div className="absolute h-[224.5px] left-[277.32px] top-[177.75px] w-[179.5px] z-[32]" data-name="guide_folder_stack">
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgGuideImage110} />
+      </div>
+      <div className="absolute h-[191.5px] left-[502.32px] top-[194.25px] w-[248.5px] z-[32]" data-name="guide_add_slot">
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgGuideImage111} />
+      </div>
+      <div className="absolute h-[136.336px] left-[767.07px] top-[226.63px] w-[92.929px] z-[33]" data-name="HollowEarth_Card">
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgCardHollowEarth} />
+      </div>
+      <div className="absolute h-[136.336px] left-[816.42px] top-[191.93px] w-[92.929px] z-[32]" data-name="OtherWorld_Card">
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgCardOtherworldly} />
+      </div>
+
+      <div className="absolute h-[40px] left-[464.99px] top-[265.28px] w-[48.5px] z-[34]" data-name="arrow_small">
+        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideArrowSmall} />
+      </div>
+      <div className="absolute h-[44px] left-[929.29px] top-[418.18px] w-[91px] z-[34]" data-name="arrow_large">
+        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideArrowLarge} />
+      </div>
+      <div className="absolute left-[473.17px] size-[57px] top-[208.38px] z-[35]" data-name="first">
+        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideFirst} />
+      </div>
+      <div className="absolute left-[674.22px] size-[60px] top-[426.78px] z-[35]" data-name="second">
+        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideSecond} />
+      </div>
+      <div className="absolute h-[39.5px] left-[736.64px] top-[197.5px] w-[65.5px] z-[35]" data-name="plus_card">
+        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuidePlusCard} />
+      </div>
+      <div className="absolute h-[22.5px] left-[754.38px] top-[177.75px] w-[58.5px] z-[35]" data-name="plus_hype">
+        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuidePlusHype} />
+      </div>
+    </div>
+  );
+}
+
+function HypeBar({ hype }: { hype: number }) {
+  const percent = Math.max(0, Math.min(100, (hype / HYPE_MAX) * 100));
+  return (
+    <div className="-translate-x-1/2 absolute h-[4px] left-1/2 top-[487px] w-[747px] z-[20]" data-name="hypebar">
+      <div className="absolute bg-[#171717] h-[2px] left-0 top-[1px] w-full" />
+      <div
+        className="absolute bg-[#e23939] h-[4px] left-0 top-0"
+        style={{ width: `${percent}%`, transition: "width 260ms ease-out" }}
+      />
+    </div>
+  );
+}
+
+function TimerBadge({ seconds }: { seconds: number }) {
+  const safeSeconds = Math.max(0, seconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const rest = String(safeSeconds % 60).padStart(2, "0");
+  return (
+    <div className="absolute flex h-[46px] items-center justify-center left-[45px] top-[32px] w-[90px] z-[20]">
+      <div
+        className="text-[#e23939] text-[44px] tracking-[-0.88px]"
+        style={{ fontFamily: "'Gagalin', sans-serif" }}
+      >
+        {minutes}:{rest}
+      </div>
+    </div>
+  );
+}
+
+function SecondStageGameLayer({
+  folders,
+  hype,
+  result,
+  selectedFolderId,
+  secondsLeft,
+  onFolderClick,
+  onFolderDrop,
+}: {
+  folders: SecondStageFolder[];
+  hype: number;
+  result: SecondStageResult;
+  selectedFolderId: number | null;
+  secondsLeft: number;
+  onFolderClick: (folderId: number, e: React.MouseEvent) => void;
+  onFolderDrop: (folderId: number, e: React.DragEvent) => void;
+}) {
+  const now = Date.now();
+  return (
+    <div className="absolute inset-0 z-[12]" data-name="second_stage_game">
+      <HypeBar hype={hype} />
+      <TimerBadge seconds={secondsLeft} />
+
+      <div className="absolute h-[286px] left-[184.97px] top-[92.96px] w-[760px]" data-name="folders">
+        {folders.map((folder) => {
+          if (folder.state === "hidden") return null;
+          const folderImage = FOLDER_IMAGES[folder.category];
+          const addSlotImage = folder.addedCard ? FOLDER_IMAGES[folder.addedCard].zone : imgZoneAddEmpty;
+          const blinking = now >= folder.blinkAt;
+          return (
+            <div
+              className="absolute h-[248px] top-0 w-[325px]"
+              data-name={folderImage.name}
+              key={folder.id}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+              }}
+              onDrop={(e) => onFolderDrop(folder.id, e)}
+              style={{
+                left: folder.left,
+                top: folder.top,
+                animation: blinking ? "folderBlink 620ms ease-in-out infinite" : undefined,
+              }}
+            >
+              <button
+                aria-label={`Folder ${folderImage.label}`}
+                className="absolute h-[248px] left-0 top-0 w-[167px] z-[1]"
+                onClick={(e) => onFolderClick(folder.id, e)}
+                style={{ cursor: "pointer" }}
+                type="button"
+              >
+                <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={folderImage.src} />
+              </button>
+              {folder.mainCard && (
+                <div className="absolute h-[190px] left-[19px] top-[42px] w-[130px] pointer-events-none z-[4]" data-name={CARD_IMAGES[folder.mainCard].name}>
+                  <img alt="" className="absolute inset-0 max-w-none object-cover size-full" src={CARD_IMAGES[folder.mainCard].src} />
+                </div>
+              )}
+              {folder.state === "waiting" && (
+                <div className="absolute h-[226px] left-[129px] top-[22px] w-[196px] z-[2]" data-name="ZoneAdd">
+                  <img
+                    alt=""
+                    className="absolute inset-0 max-w-none object-cover pointer-events-none size-full z-[1]"
+                    src={addSlotImage}
+                  />
+                  {folder.addedCard && (
+                    <div className="absolute h-[190px] left-[44px] top-[18px] w-[130px] pointer-events-none z-[3]" data-name={CARD_IMAGES[folder.addedCard].name}>
+                      <img alt="" className="absolute inset-0 max-w-none object-cover size-full" src={CARD_IMAGES[folder.addedCard].src} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {result && (
+        <div className="absolute inset-0 z-[50] flex items-center justify-center bg-black/20">
+          <div
+            className="text-[#e23939] text-[108px] tracking-[-2px]"
+            style={{
+              fontFamily: "'Gagalin', sans-serif",
+              WebkitTextStroke: "3px #171717",
+            }}
+          >
+            {result}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SecondStageGameCardsHand({
+  cards,
+  draggingCardIndex,
+  onCardClick,
+  onCardDragEnd,
+  onCardDragStart,
+}: {
+  cards: CardCategory[];
+  draggingCardIndex: number | null;
+  onCardClick: (index: number, e: React.MouseEvent) => void;
+  onCardDragEnd: (e: React.DragEvent) => void;
+  onCardDragStart: (index: number, e: React.DragEvent) => void;
+}) {
+  return (
+    <div className="absolute h-[190px] left-[528.83px] top-[613px] w-[900px] z-[24]" data-name="cards_hand">
+      {cards.slice(0, MAX_SELECTED_PHRASES).map((category, index) => {
+        const card = CARD_IMAGES[category];
+        const raised = draggingCardIndex === index;
+        return (
+          <button
+            aria-label={card.name}
+            className="absolute h-[190px] top-0 w-[130px]"
+            data-name={card.name}
+            draggable
+            key={`second-game-${category}-${index}`}
+            onClick={(e) => onCardClick(index, e)}
+            onDragEnd={onCardDragEnd}
+            onDragStart={(e) => onCardDragStart(index, e)}
+            style={{
+              cursor: "grab",
+              left: index * SECOND_STAGE_CARD_GAP,
+              transform: raised ? "translateY(-142px) scale(1.9)" : "translateY(0) scale(1)",
+              transformOrigin: "bottom center",
+              transition: "transform 180ms ease-out, filter 180ms ease-out",
+              filter: raised ? "drop-shadow(0 0 24px rgba(226,57,57,0.95))" : undefined,
+              zIndex: raised ? 500 : index,
+            }}
+            type="button"
+          >
+            <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={card.src} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SecondStageMonitor({
+  showMessages,
+  envelopeShaking,
+  onEnvelopeClick,
+  guideOpen,
+  onGuideOpen,
+  onGuideClose,
+  gameActive,
+  gameResult,
+  folders,
+  hype,
+  selectedFolderId,
+  secondsLeft,
+  onGameFolderClick,
+  onGameFolderDrop,
+}: {
+  showMessages: boolean;
+  envelopeShaking: boolean;
+  onEnvelopeClick: (e: React.MouseEvent) => void;
+  guideOpen: boolean;
+  onGuideOpen: (e: React.MouseEvent) => void;
+  onGuideClose: (e: React.MouseEvent) => void;
+  gameActive: boolean;
+  gameResult: SecondStageResult;
+  folders: SecondStageFolder[];
+  hype: number;
+  selectedFolderId: number | null;
+  secondsLeft: number;
+  onGameFolderClick: (folderId: number, e: React.MouseEvent) => void;
+  onGameFolderDrop: (folderId: number, e: React.DragEvent) => void;
+}) {
+  return (
+    <div
+      className="-translate-x-1/2 -translate-y-1/2 absolute h-[573px] left-1/2 overflow-clip top-[calc(50%-99.5px)] w-[1185px]"
+      data-name="screen_secondstage"
+    >
+      <div className="absolute h-[573px] left-0 overflow-clip top-0 w-[1185px]" data-name="bg">
+        <div
+          className="absolute h-[558.911px] left-[0.78px] top-0 w-[1184.225px]"
+          data-name="color"
+          style={{
+            backgroundImage:
+              "linear-gradient(90deg, rgba(0, 0, 0, 0.11) 0%, rgba(0, 0, 0, 0.11) 100%), linear-gradient(90deg, rgb(237, 235, 223) 0%, rgb(237, 235, 223) 100%)",
+          }}
+        />
+        {!gameActive && <div className="absolute contents left-[-192.22px] top-[107.74px]" data-name="interface">
+          <div className="absolute h-[308.84px] left-[-192.22px] opacity-28 top-[107.74px] w-[568.546px]" data-name="ChatGPT Image Apr 6, 2026, 02_56_34 PM 2">
+            <img alt="" className="absolute inset-0 max-w-none object-bottom pointer-events-none size-full" src={imgSecondStageInterfaceLeft} />
+          </div>
+          <div className="-translate-x-1/2 absolute h-[288.496px] left-[calc(50%+179.81px)] opacity-32 top-[361.78px] w-[668.164px]" data-name="ChatGPT Image Apr 6, 2026, 02_47_12 PM 1">
+            <img alt="" className="absolute inset-0 max-w-none object-bottom pointer-events-none size-full" src={imgSecondStageWaveWindow} />
+          </div>
+          <div className="absolute h-[374.247px] left-[419.38px] opacity-23 top-[308.97px] w-[687.007px]" data-name="image 98">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <img alt="" className="absolute h-[98.81%] left-0 max-w-none top-[1.19%] w-[101.35%]" src={imgSecondStageInterfaceRight} />
+            </div>
+          </div>
+          <div className="-translate-x-1/2 absolute bottom-[14.09px] h-[68.519px] left-[calc(50%-246.53px)] opacity-67 w-[689.829px]" data-name="ChatGPT Image Apr 6, 2026, 02_56_34 PM 4">
+            <div aria-hidden className="absolute inset-0 pointer-events-none">
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.2) 100%), linear-gradient(90deg, rgb(237, 235, 223) 0%, rgb(237, 235, 223) 100%)",
+                }}
+              />
+              <img alt="" className="absolute max-w-none object-bottom opacity-10 size-full" src={imgSecondStageBottomLeft} />
+            </div>
+          </div>
+          <div className="-translate-x-1/2 absolute bottom-[14.09px] h-[68.519px] left-[calc(50%+345.44px)] opacity-67 w-[494.112px]" data-name="ChatGPT Image Apr 6, 2026, 02_56_34 PM 3">
+            <div aria-hidden className="absolute inset-0 pointer-events-none">
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.2) 100%), linear-gradient(90deg, rgb(237, 235, 223) 0%, rgb(237, 235, 223) 100%)",
+                }}
+              />
+              <img alt="" className="absolute max-w-none object-bottom opacity-10 size-full" src={imgSecondStageBottomRight} />
+            </div>
+          </div>
+        </div>}
+        {gameActive && (
+          <div className="absolute bottom-[13px] h-[68.519px] left-[0.78px] opacity-67 w-[1184.225px]" data-name="game_interface">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.18) 100%), linear-gradient(90deg, rgb(237, 235, 223) 0%, rgb(237, 235, 223) 100%)",
+              }}
+            />
+            <img alt="" className="absolute bottom-0 left-0 max-w-none object-bottom opacity-10 h-full w-[690px]" src={imgSecondStageBottomLeft} />
+            <img alt="" className="absolute bottom-0 right-0 max-w-none object-bottom opacity-10 h-full w-[494px]" src={imgSecondStageBottomRight} />
+          </div>
+        )}
+      </div>
+      <div className="absolute contents left-[0.78px] top-0" data-name="screen">
+        <div className="absolute h-[576.932px] left-[0.78px] pointer-events-none top-0 w-[1184.224px]" data-name="Subtract">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" height="576.932" src={imgSecondStageSubtract} width="1184.224" />
+        </div>
+      </div>
+      <div className="absolute left-[1095px] size-[32px] top-[474.39px]" data-name="MouseLeftClick">
+        <svg className="absolute block inset-0 size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 32 32">
+          <g clipPath="url(#clip0_second_stage_mouse)" id="MouseLeftClick">
+            <g id="Vector" />
+            <path d={svgPaths.p3cc11a70} fill="var(--fill-0, #171717)" id="Vector_2" />
+          </g>
+          <defs>
+            <clipPath id="clip0_second_stage_mouse">
+              <rect fill="white" height="32" width="32" />
+            </clipPath>
+          </defs>
+        </svg>
+      </div>
+
+      {gameActive && (
+        <SecondStageGameLayer
+          folders={folders}
+          hype={hype}
+          onFolderClick={onGameFolderClick}
+          onFolderDrop={onGameFolderDrop}
+          result={gameResult}
+          secondsLeft={secondsLeft}
+          selectedFolderId={selectedFolderId}
+        />
+      )}
+
+      {showMessages && !gameActive && (
+        <>
+          <div className="absolute bg-white border-2 border-black border-solid content-stretch flex items-center left-[138.83px] overflow-clip px-[20px] py-[16px] top-[81.53px] w-[544px]">
+            <div
+              className="[word-break:break-word] flex flex-col justify-center leading-[0] not-italic relative shrink-0 text-[#e23939] text-[20px] tracking-[-0.4px] w-[463.913px]"
+              style={{ fontFamily: HANDWRITE_FONT }}
+            >
+              <p>
+                <span className="leading-[1.55]">{SECOND_STAGE_MESSAGE_1.redStart}</span>
+                <span className="leading-[1.55] text-[#171717]">{SECOND_STAGE_MESSAGE_1.black}</span>
+                <span className="leading-[1.55]">{SECOND_STAGE_MESSAGE_1.redMiddle}</span>
+                <span className="leading-[1.55]">{SECOND_STAGE_MESSAGE_1.blackEnd}</span>
+                <span className="leading-[1.55]">{SECOND_STAGE_MESSAGE_1.redEnd}</span>
+              </p>
+            </div>
+          </div>
+          <div className="absolute bg-white border-2 border-black border-solid content-stretch flex items-center left-[138.83px] overflow-clip px-[20px] py-[16px] top-[257.53px] w-[544px]">
+            <div
+              className="[word-break:break-word] flex flex-col justify-center leading-[0] not-italic relative shrink-0 text-[#e23939] text-[20px] tracking-[-0.4px] w-[452px]"
+              style={{ fontFamily: HANDWRITE_FONT }}
+            >
+              <p className="leading-[1.55]">{SECOND_STAGE_MESSAGE_2}</p>
+            </div>
+            <button
+              aria-label="Open guide"
+              className="-translate-y-1/2 absolute right-[16px] size-[37px] top-1/2 z-[2]"
+              data-name="FileArrowDown"
+              onClick={onGuideOpen}
+              style={{ cursor: "pointer" }}
+              type="button"
+            >
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgSecondStageDownloadIcon} />
+            </button>
+          </div>
+        </>
+      )}
+
+      {!gameActive && (
+        <MailIconAnimated
+          badgeIn
+          className="absolute block h-[52px] left-[66.28px] overflow-clip top-[81.53px] w-[64px]"
+          isAlert
+          isShaking={envelopeShaking}
+          onEnvClick={showMessages ? undefined : onEnvelopeClick}
+        />
+      )}
+      {guideOpen && !gameActive && <CleanSecondStageGuide onClose={onGuideClose} />}
+    </div>
+  );
+}
+
+function SecondStageScene({
+  cards,
+  envelopeShaking,
+  gameActive,
+  gameCards,
+  draggingCardIndex,
+  gameResult,
+  folders,
+  hype,
+  onTipClick,
+  onPlayClick,
+  showMessages,
+  onEnvelopeClick,
+  guideOpen,
+  onGuideOpen,
+  onGuideClose,
+  secondsLeft,
+  selectedFolderId,
+  onGameCardClick,
+  onGameCardDragEnd,
+  onGameCardDragStart,
+  onGameFolderClick,
+  onGameFolderDrop,
+}: {
+  cards: CardCategory[];
+  envelopeShaking: boolean;
+  gameActive: boolean;
+  gameCards: CardCategory[];
+  draggingCardIndex: number | null;
+  gameResult: SecondStageResult;
+  folders: SecondStageFolder[];
+  hype: number;
+  onTipClick: (e: React.MouseEvent) => void;
+  onPlayClick: (e: React.MouseEvent) => void;
+  showMessages: boolean;
+  onEnvelopeClick: (e: React.MouseEvent) => void;
+  guideOpen: boolean;
+  onGuideOpen: (e: React.MouseEvent) => void;
+  onGuideClose: (e: React.MouseEvent) => void;
+  secondsLeft: number;
+  selectedFolderId: number | null;
+  onGameCardClick: (index: number, e: React.MouseEvent) => void;
+  onGameCardDragEnd: (e: React.DragEvent) => void;
+  onGameCardDragStart: (index: number, e: React.DragEvent) => void;
+  onGameFolderClick: (folderId: number, e: React.MouseEvent) => void;
+  onGameFolderDrop: (folderId: number, e: React.DragEvent) => void;
+}) {
+  return (
+    <div className="absolute inset-0 overflow-hidden" data-name="second_stage" style={{ animation: `secondStageFadeIn ${SCENE_FADE_MS}ms ease-out both` }}>
+      <div className="absolute inset-0 overflow-clip" data-name="bg">
+        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgSecondStageBackgroundFull} />
+      </div>
+      <SecondStageKeyboard onPlayClick={onPlayClick} onTipClick={onTipClick} playEnabled={showMessages && !gameActive} />
+      <SecondStageMonitor
+        envelopeShaking={envelopeShaking}
+        folders={folders}
+        gameActive={gameActive}
+        gameResult={gameResult}
+        guideOpen={guideOpen}
+        hype={hype}
+        onEnvelopeClick={onEnvelopeClick}
+        onGameFolderClick={onGameFolderClick}
+        onGameFolderDrop={onGameFolderDrop}
+        onGuideClose={onGuideClose}
+        onGuideOpen={onGuideOpen}
+        secondsLeft={secondsLeft}
+        selectedFolderId={selectedFolderId}
+        showMessages={showMessages}
+      />
+      {gameActive && (
+        <SecondStageGameCardsHand
+          cards={gameCards}
+          draggingCardIndex={draggingCardIndex}
+          onCardClick={onGameCardClick}
+          onCardDragEnd={onGameCardDragEnd}
+          onCardDragStart={onGameCardDragStart}
+        />
+      )}
+      {!gameActive && <SecondStageCards cards={cards} />}
+    </div>
   );
 }
 
@@ -1091,6 +2003,16 @@ export default function App() {
   const [activePhrases, setActivePhrases] = useState<FallingPhrase[]>([]);
   const [selectedPhraseCount, setSelectedPhraseCount] = useState(0);
   const [awardedCards, setAwardedCards] = useState<CardCategory[]>([]);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [sceneTransitioning, setSceneTransitioning] = useState(false);
+  const [secondStageCards, setSecondStageCards] = useState<CardCategory[]>([]);
+  const [secondStageFolders, setSecondStageFolders] = useState<SecondStageFolder[]>([]);
+  const [selectedSecondCardIndex, setSelectedSecondCardIndex] = useState<number | null>(null);
+  const [selectedSecondFolderId, setSelectedSecondFolderId] = useState<number | null>(null);
+  const [draggingSecondCardIndex, setDraggingSecondCardIndex] = useState<number | null>(null);
+  const [secondStageHype, setSecondStageHype] = useState(HYPE_START);
+  const [secondStageSecondsLeft, setSecondStageSecondsLeft] = useState(SECOND_STAGE_GAME_SECONDS);
+  const [secondStageResult, setSecondStageResult] = useState<SecondStageResult>(null);
 
   // Multiple timers managed via a ref array
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -1182,6 +2104,10 @@ export default function App() {
   const isPhraseSelection = phase === "phraseSelection";
   const isGameOutroScrim = phase === "gameOutroScrim";
   const isGameComplete = phase === "gameComplete";
+  const isSecondStageAlert = phase === "secondStageAlert";
+  const isSecondStageMessages = phase === "secondStageMessages";
+  const isSecondStageGame = phase === "secondStageGame";
+  const isSecondStage = isSecondStageAlert || isSecondStageMessages || isSecondStageGame;
   const isGameScene = isGameIntroScrim || isPhraseSelection || isGameOutroScrim || isGameComplete;
   const isGameBackground = isGameIntroScrim || isPhraseSelection;
   const subtractImg   = showFinalMessages      ? imgSubtractB
@@ -1229,6 +2155,72 @@ export default function App() {
       setPhase("gameOutroScrim");
     }
   }, [phase, selectedPhraseCount]);
+
+  useEffect(() => {
+    if (phase !== "secondStageGame" || secondStageResult) return;
+
+    const id = setInterval(() => {
+      const now = Date.now();
+      setSecondStageSecondsLeft((seconds) => {
+        const next = Math.max(0, seconds - 1);
+        if (next === 0) {
+          setSecondStageResult(getSecondStageResult(secondStageHype));
+        }
+        return next;
+      });
+      setSecondStageFolders((folders) => {
+        const nextFolders: SecondStageFolder[] = [];
+        folders.forEach((folder, index) => {
+          if (now < folder.expiresAt) {
+            nextFolders.push(folder);
+            return;
+          }
+          if (folder.state === "hidden") {
+            const foldersStayingVisible = folders
+              .slice(index + 1)
+              .filter((futureFolder) => futureFolder.state !== "hidden" && now < futureFolder.expiresAt);
+            const visibleFolderCount = [...nextFolders, ...foldersStayingVisible].filter(
+              (visibleFolder) => visibleFolder.state !== "hidden"
+            ).length;
+            if (visibleFolderCount >= MAX_VISIBLE_FOLDERS) {
+              nextFolders.push({
+                ...folder,
+                expiresAt: now + 700,
+                blinkAt: Number.POSITIVE_INFINITY,
+              });
+              return;
+            }
+            const position = pickFreeFolderPosition(
+              [...nextFolders, ...foldersStayingVisible],
+              { left: folder.left, top: folder.top }
+            );
+            nextFolders.push(refreshSecondStageFolder(folder, now, position));
+            return;
+          }
+          nextFolders.push(hideSecondStageFolder(folder, now));
+        });
+        if (!nextFolders.some((folder) => folder.id === selectedSecondFolderId)) {
+          setSelectedSecondFolderId(null);
+        }
+        return nextFolders;
+      });
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [phase, secondStageHype, secondStageResult, selectedSecondFolderId]);
+
+  const startSecondStageTransition = useCallback(() => {
+    if (sceneTransitioning) return;
+    setGuideOpen(false);
+    setEnvelopeShaking(false);
+    setPhase("gameComplete");
+    setSceneTransitioning(true);
+    after(() => {
+      setSceneTransitioning(false);
+      setEnvelopeShaking(true);
+      setPhase("secondStageAlert");
+    }, SCENE_FADE_MS);
+  }, [after, sceneTransitioning]);
 
   // ── Envelope click (envelopeAlert only) ───────────────────────────────────
   const handleEnvelopeClick = useCallback(
@@ -1280,7 +2272,7 @@ export default function App() {
       }
 
       if (phase === "gameOutroScrim") {
-        setPhase("gameComplete");
+        startSecondStageTransition();
         return;
       }
 
@@ -1290,6 +2282,9 @@ export default function App() {
         case "finalIntroState":
         case "phraseSelection":
         case "gameComplete":
+        case "secondStageAlert":
+        case "secondStageMessages":
+        case "secondStageGame":
         case "testCompleted":
           return;
 
@@ -1317,7 +2312,7 @@ export default function App() {
         }
       }
     },
-    [phase]
+    [phase, startSecondStageTransition]
   );
 
   // ── Rec button click ───────────────────────────────────────────────────────
@@ -1329,7 +2324,10 @@ export default function App() {
         phase === "gameIntroScrim" ||
         phase === "phraseSelection" ||
         phase === "gameOutroScrim" ||
-        phase === "gameComplete"
+        phase === "gameComplete" ||
+        phase === "secondStageAlert" ||
+        phase === "secondStageMessages" ||
+        phase === "secondStageGame"
       ) return;
 
       if (phase !== "finalIntroState" && phase !== "testCompleted") {
@@ -1354,7 +2352,7 @@ export default function App() {
         };
       });
     },
-    [phase]
+    [phase, startSecondStageTransition]
   );
 
   const handleGameIntroScrimClick = useCallback((e?: React.MouseEvent) => {
@@ -1366,8 +2364,155 @@ export default function App() {
   const handleGameOutroScrimClick = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (phase !== "gameOutroScrim") return;
-    setPhase("gameComplete");
+    startSecondStageTransition();
+  }, [phase, startSecondStageTransition]);
+
+  const handleSecondStageEnvelopeClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (phase !== "secondStageAlert") return;
+    setEnvelopeShaking(false);
+    setPhase("secondStageMessages");
   }, [phase]);
+
+  const handleGuideOpen = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (phase !== "secondStageMessages") return;
+    setGuideOpen(true);
+  }, [phase]);
+
+  const handleGuideClose = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setGuideOpen(false);
+  }, []);
+
+  const handleSecondStagePlayClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (phase !== "secondStageMessages") return;
+    setGuideOpen(false);
+    setSelectedSecondCardIndex(null);
+    setSelectedSecondFolderId(null);
+    setDraggingSecondCardIndex(null);
+    setSecondStageHype(HYPE_START);
+    setSecondStageSecondsLeft(SECOND_STAGE_GAME_SECONDS);
+    setSecondStageResult(null);
+    setSecondStageFolders(createSecondStageFolders());
+    setSecondStageCards(awardedCards.length ? awardedCards : CATEGORY_ORDER);
+    setPhase("secondStageGame");
+  }, [phase, awardedCards]);
+
+  const placeSecondStageCardInFolder = useCallback((cardIndex: number, folderId: number) => {
+    if (phase !== "secondStageGame" || secondStageResult) return;
+
+    const selectedCard = secondStageCards[cardIndex];
+    const targetFolder = secondStageFolders.find((folder) => folder.id === folderId);
+    if (!selectedCard || !targetFolder) return;
+
+    const now = Date.now();
+
+    if (targetFolder.state === "empty") {
+      if (targetFolder.category !== selectedCard) return;
+      setSecondStageFolders((folders) =>
+        folders.map((folder) =>
+          folder.id === folderId
+            ? {
+                ...folder,
+                state: "waiting",
+                mainCard: selectedCard,
+                addedCard: undefined,
+                expiresAt: now + FOLDER_LIFETIME_MS,
+                blinkAt: now + ADD_CARD_REPLACE_MS,
+              }
+            : folder
+        )
+      );
+      setSecondStageCards((cards) => {
+        const next = cards.filter((_, index) => index !== cardIndex);
+        if (next.length === 0) {
+          setSecondStageResult(getSecondStageResult(secondStageHype));
+        }
+        return next;
+      });
+      setSelectedSecondCardIndex(null);
+      setDraggingSecondCardIndex(null);
+      setSelectedSecondFolderId(folderId);
+      return;
+    }
+
+    if (targetFolder.mainCard && selectedCard !== targetFolder.mainCard) {
+      const combo = resolveSecondStageCombo(targetFolder.mainCard, selectedCard);
+      const projectedHype = combo.hype ? Math.min(HYPE_MAX, secondStageHype + combo.hype) : secondStageHype;
+      setSecondStageCards((cards) => {
+        const next = cards.filter((_, index) => index !== cardIndex);
+        if (combo.card) next.push(combo.card);
+        if (next.length === 0) {
+          setSecondStageResult(getSecondStageResult(projectedHype));
+        }
+        return next;
+      });
+      if (combo.hype) {
+        setSecondStageHype((hype) => Math.min(HYPE_MAX, hype + combo.hype));
+      }
+      setSecondStageFolders((folders) =>
+        folders.map((folder) =>
+          folder.id === folderId
+            ? {
+                ...folder,
+                addedCard: selectedCard,
+                expiresAt: now + 700,
+                blinkAt: Number.POSITIVE_INFINITY,
+              }
+            : folder
+        )
+      );
+      setSelectedSecondCardIndex(null);
+      setDraggingSecondCardIndex(null);
+      setSelectedSecondFolderId(null);
+    }
+  }, [phase, secondStageCards, secondStageFolders, secondStageHype, secondStageResult]);
+
+  const handleSecondStageCardClick = useCallback((index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (phase !== "secondStageGame" || secondStageResult) return;
+
+    const selectedCard = secondStageCards[index];
+    if (!selectedCard) return;
+
+    const activeFolder = secondStageFolders.find((folder) => folder.id === selectedSecondFolderId);
+    if (activeFolder?.state === "waiting" && activeFolder.mainCard && selectedCard !== activeFolder.mainCard) {
+      placeSecondStageCardInFolder(index, activeFolder.id);
+      return;
+    }
+
+    setSelectedSecondCardIndex((current) => (current === index ? null : index));
+  }, [phase, placeSecondStageCardInFolder, secondStageCards, secondStageFolders, secondStageResult, selectedSecondFolderId]);
+
+  const handleSecondStageCardDragStart = useCallback((index: number, e: React.DragEvent) => {
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(index));
+    setSelectedSecondCardIndex(index);
+    setDraggingSecondCardIndex(index);
+  }, []);
+
+  const handleSecondStageCardDragEnd = useCallback((e: React.DragEvent) => {
+    e.stopPropagation();
+    setDraggingSecondCardIndex(null);
+  }, []);
+
+  const handleSecondStageFolderClick = useCallback((folderId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (phase !== "secondStageGame" || secondStageResult || selectedSecondCardIndex === null) return;
+
+    placeSecondStageCardInFolder(selectedSecondCardIndex, folderId);
+  }, [phase, placeSecondStageCardInFolder, secondStageResult, selectedSecondCardIndex]);
+
+  const handleSecondStageFolderDrop = useCallback((folderId: number, e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const cardIndex = Number(e.dataTransfer.getData("text/plain"));
+    if (!Number.isFinite(cardIndex)) return;
+    placeSecondStageCardInFolder(cardIndex, folderId);
+  }, [placeSecondStageCardInFolder]);
 
   // ── Tip click ──────────────────────────────────────────────────────────────
   const handleTipClick = useCallback(
@@ -1401,6 +2546,7 @@ export default function App() {
         };
       });
       setShowSummary(true);
+      setGuideOpen(false);
     },
     [phase, clearTimers]
   );
@@ -1423,19 +2569,21 @@ export default function App() {
 
   // ── Global misclick ────────────────────────────────────────────────────────
   const handleGlobalClick = useCallback(() => {
+    if (guideOpen || sceneTransitioning) return;
+
     if (phase === "gameIntroScrim") {
       setPhase("phraseSelection");
       return;
     }
 
     if (phase === "gameOutroScrim") {
-      setPhase("gameComplete");
+      startSecondStageTransition();
       return;
     }
 
     if (phase === "testCompleted" || showSummary) return;
     setMetrics(prev => ({ ...prev, misclicks: prev.misclicks + 1 }));
-  }, [phase, showSummary]);
+  }, [phase, showSummary, guideOpen, sceneTransitioning, startSecondStageTransition]);
 
   // ── Restart ────────────────────────────────────────────────────────────────
   const handleRestart = useCallback(() => {
@@ -1448,6 +2596,16 @@ export default function App() {
     setShowFinalMessages(false);
     setPhraseVisible(false);
     setShowSummary(false);
+    setGuideOpen(false);
+    setSceneTransitioning(false);
+    setSecondStageCards([]);
+    setSecondStageFolders([]);
+    setSelectedSecondCardIndex(null);
+    setSelectedSecondFolderId(null);
+    setDraggingSecondCardIndex(null);
+    setSecondStageHype(HYPE_START);
+    setSecondStageSecondsLeft(SECOND_STAGE_GAME_SECONDS);
+    setSecondStageResult(null);
     setActivePhrases([]);
     setSelectedPhraseCount(0);
     setAwardedCards([]);
@@ -1491,6 +2649,17 @@ export default function App() {
         className="bg-white"
         onClick={handleGlobalClick}
       >
+        {!isSecondStage && (
+          <div
+            className="absolute inset-0"
+            data-name="first_stage"
+            style={{
+              animation: sceneTransitioning
+                ? `firstStageFadeOut ${SCENE_FADE_MS}ms ease-in both`
+                : undefined,
+              pointerEvents: sceneTransitioning ? "none" : undefined,
+            }}
+          >
         {/* Background */}
         <div className="absolute h-[900px] left-[-0.42px] top-0 w-[1600px]" data-name="bg">
           <img
@@ -1572,9 +2741,38 @@ export default function App() {
         {isGameOutroScrim && (
           <GameScrim lines={GAME_OUTRO_SCRIM_LINES} onClick={handleGameOutroScrimClick} />
         )}
+          </div>
+        )}
+
+        {isSecondStage && (
+          <SecondStageScene
+            cards={awardedCards}
+            draggingCardIndex={draggingSecondCardIndex}
+            envelopeShaking={isSecondStageAlert && envelopeShaking}
+            folders={secondStageFolders}
+            gameActive={isSecondStageGame}
+            gameCards={secondStageCards}
+            gameResult={secondStageResult}
+            guideOpen={guideOpen}
+            hype={secondStageHype}
+            onEnvelopeClick={handleSecondStageEnvelopeClick}
+            onGameCardClick={handleSecondStageCardClick}
+            onGameCardDragEnd={handleSecondStageCardDragEnd}
+            onGameCardDragStart={handleSecondStageCardDragStart}
+            onGameFolderClick={handleSecondStageFolderClick}
+            onGameFolderDrop={handleSecondStageFolderDrop}
+            onGuideClose={handleGuideClose}
+            onGuideOpen={handleGuideOpen}
+            onPlayClick={handleSecondStagePlayClick}
+            onTipClick={handleTipClick}
+            secondsLeft={secondStageSecondsLeft}
+            selectedFolderId={selectedSecondFolderId}
+            showMessages={isSecondStageMessages}
+          />
+        )}
 
         {/* Character phrase scrim */}
-        <CharacterPhrase phrase={PHRASE_READING} visible={phraseVisible} />
+        {!isSecondStage && <CharacterPhrase phrase={PHRASE_READING} visible={phraseVisible} />}
 
         {/* Test summary */}
         {showSummary && (
