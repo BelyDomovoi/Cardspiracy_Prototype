@@ -44,6 +44,7 @@ import imgGuidePlusCard from "../imports/guide_plus_card.png";
 import imgGuidePlusHype from "../imports/guide_plus_hype.png";
 import imgGuideFirst from "../imports/guide_first.png";
 import imgGuideSecond from "../imports/guide_second.png";
+import imgSecondStageGuideScreen from "../imports/second_stage_guide_screen.png";
 import imgFolderGovernment from "../imports/folder_government.png";
 import imgFolderHollowEarth from "../imports/folder_hollow_earth.png";
 import imgFolderOtherworldly from "../imports/folder_otherworldly.png";
@@ -169,11 +170,11 @@ const PHRASE_MAX_ACTIVE = Math.ceil(PHRASE_FALL_MS / PHRASE_SAFE_SPAWN_MS) + 1;
 const PHRASE_WIDTH = 400;
 const PHRASE_LANES = [63.77, 424.43];
 const SECOND_STAGE_GAME_SECONDS = 45;
-const HYPE_TARGET_POINTS = 5;
-const HYPE_MAX = HYPE_TARGET_POINTS;
-const HYPE_START = 0;
+const HYPE_MAX = 10;
+const HYPE_START = 5;
 const HYPE_WIN_THRESHOLD = HYPE_MAX * 0.5;
 const HYPE_GAIN = 1;
+const HYPE_DECAY = 0.08;
 const FOLDER_LIFETIME_MS = 7600;
 const FOLDER_BLINK_MS = 2600;
 const ADD_CARD_REPLACE_MS = 2200;
@@ -189,6 +190,7 @@ const FOLDER_SCREEN_RIGHT_GAP = 56;
 type CardCategory = "GOVERNMENT" | "HOLLOW_EARTH" | "OTHERWORLDLY";
 type PhraseType = CardCategory | "NONE";
 type SecondStageResult = "WIN" | "LOSE" | null;
+type DragPosition = { x: number; y: number };
 
 interface SecondStageFolder {
   id: number;
@@ -1226,54 +1228,14 @@ function CleanSecondStageGuide({ onClose }: { onClose: (e: React.MouseEvent) => 
       data-name="guide_clean"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="absolute bg-black/30 h-[558.911px] left-[0.78px] top-0 w-[1184.225px]" />
-      <div className="absolute h-[399.491px] left-[202.39px] top-[79.71px] w-[780.217px]">
-        <div className="absolute bg-[#d3d1c7] h-full left-0 top-0 w-full" />
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <img alt="" className="absolute h-[106.27%] left-[-1.19%] max-w-none top-0 w-[102.45%]" src={imgSecondStageInterfaceRight} />
-        </div>
-        <button
-          aria-label="Close guide"
-          className="absolute right-[22px] size-[32px] top-[8px] z-[6]"
-          onClick={onClose}
-          style={{ cursor: "pointer" }}
-          type="button"
-        >
-          <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideX} />
-        </button>
-      </div>
-
-      <div className="absolute h-[224.5px] left-[277.32px] top-[177.75px] w-[179.5px] z-[32]" data-name="guide_folder_stack">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgGuideImage110} />
-      </div>
-      <div className="absolute h-[191.5px] left-[502.32px] top-[194.25px] w-[248.5px] z-[32]" data-name="guide_add_slot">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgGuideImage111} />
-      </div>
-      <div className="absolute h-[136.336px] left-[767.07px] top-[226.63px] w-[92.929px] z-[33]" data-name="HollowEarth_Card">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgCardHollowEarth} />
-      </div>
-      <div className="absolute h-[136.336px] left-[816.42px] top-[191.93px] w-[92.929px] z-[32]" data-name="OtherWorld_Card">
-        <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgCardOtherworldly} />
-      </div>
-
-      <div className="absolute h-[40px] left-[464.99px] top-[265.28px] w-[48.5px] z-[34]" data-name="arrow_small">
-        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideArrowSmall} />
-      </div>
-      <div className="absolute h-[44px] left-[929.29px] top-[418.18px] w-[91px] z-[34]" data-name="arrow_large">
-        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideArrowLarge} />
-      </div>
-      <div className="absolute left-[473.17px] size-[57px] top-[208.38px] z-[35]" data-name="first">
-        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideFirst} />
-      </div>
-      <div className="absolute left-[674.22px] size-[60px] top-[426.78px] z-[35]" data-name="second">
-        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuideSecond} />
-      </div>
-      <div className="absolute h-[39.5px] left-[736.64px] top-[197.5px] w-[65.5px] z-[35]" data-name="plus_card">
-        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuidePlusCard} />
-      </div>
-      <div className="absolute h-[22.5px] left-[754.38px] top-[177.75px] w-[58.5px] z-[35]" data-name="plus_hype">
-        <img alt="" className="absolute inset-0 max-w-none object-contain pointer-events-none size-full" src={imgGuidePlusHype} />
-      </div>
+      <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={imgSecondStageGuideScreen} />
+      <button
+        aria-label="Close guide"
+        className="absolute left-[936.92px] size-[32px] top-[87.85px]"
+        onClick={onClose}
+        style={{ cursor: "pointer" }}
+        type="button"
+      />
     </div>
   );
 }
@@ -1307,6 +1269,41 @@ function TimerBadge({ seconds }: { seconds: number }) {
   );
 }
 
+function SecondStageResultScreen({ result }: { result: Exclude<SecondStageResult, null> }) {
+  const isWin = result === "WIN";
+  return (
+    <div className="absolute inset-0 z-[50]" data-name={isWin ? "Win" : "Lose"}>
+      <div
+        className="-translate-x-1/2 -translate-y-1/2 absolute h-[540.816px] left-1/2 top-1/2 w-[1146.023px]"
+        data-name={isWin ? "success_overlay" : "error_overlay"}
+        style={{
+          backgroundColor: isWin ? "#0adb75" : "#e23939",
+          opacity: isWin ? 0.73 : 0.84,
+        }}
+      />
+      <div
+        className="-translate-x-1/2 -translate-y-1/2 [word-break:break-word] absolute flex flex-col justify-center leading-[0] left-1/2 not-italic text-[#edebdf] text-[64px] top-1/2 tracking-[-1.28px] whitespace-nowrap"
+        style={{ fontFamily: "'Gagalin', sans-serif" }}
+      >
+        <p className="leading-none">{isWin ? "SUCCESS" : "ERROR"}</p>
+      </div>
+      <div className="absolute left-[1095px] size-[32px] top-[474.39px]" data-name="MouseLeftClick">
+        <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 32 32">
+          <g clipPath="url(#clip0_second_stage_result_mouse)" id="MouseLeftClick">
+            <path d={svgPaths.p20ec380} fill="var(--fill-0, #171717)" id="Vector" />
+            <path d={svgPaths.p20b52f80} fill="var(--fill-0, #171717)" id="Vector_2" />
+          </g>
+          <defs>
+            <clipPath id="clip0_second_stage_result_mouse">
+              <rect fill="white" height="32" width="32" />
+            </clipPath>
+          </defs>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 function SecondStageGameLayer({
   folders,
   hype,
@@ -1315,6 +1312,7 @@ function SecondStageGameLayer({
   secondsLeft,
   onFolderClick,
   onFolderDrop,
+  onFolderCardReturn,
 }: {
   folders: SecondStageFolder[];
   hype: number;
@@ -1323,6 +1321,7 @@ function SecondStageGameLayer({
   secondsLeft: number;
   onFolderClick: (folderId: number, e: React.MouseEvent) => void;
   onFolderDrop: (folderId: number, e: React.DragEvent) => void;
+  onFolderCardReturn: (folderId: number, slot: "main" | "added", e: React.MouseEvent) => void;
 }) {
   const now = Date.now();
   return (
@@ -1338,7 +1337,7 @@ function SecondStageGameLayer({
           const blinking = now >= folder.blinkAt;
           return (
             <div
-              className="absolute h-[248px] top-0 w-[325px]"
+              className="absolute h-[308px] top-0 w-[385px]"
               data-name={folderImage.name}
               key={folder.id}
               onDragOver={(e) => {
@@ -1347,14 +1346,14 @@ function SecondStageGameLayer({
               }}
               onDrop={(e) => onFolderDrop(folder.id, e)}
               style={{
-                left: folder.left,
-                top: folder.top,
+                left: folder.left - 30,
+                top: folder.top - 30,
                 animation: blinking ? "folderBlink 620ms ease-in-out infinite" : undefined,
               }}
             >
               <button
                 aria-label={`Folder ${folderImage.label}`}
-                className="absolute h-[248px] left-0 top-0 w-[167px] z-[1]"
+                className="absolute h-[248px] left-[30px] top-[30px] w-[167px] z-[1]"
                 onClick={(e) => onFolderClick(folder.id, e)}
                 style={{ cursor: "pointer" }}
                 type="button"
@@ -1362,21 +1361,35 @@ function SecondStageGameLayer({
                 <img alt="" className="absolute inset-0 max-w-none object-cover pointer-events-none size-full" src={folderImage.src} />
               </button>
               {folder.mainCard && (
-                <div className="absolute h-[190px] left-[19px] top-[42px] w-[130px] pointer-events-none z-[4]" data-name={CARD_IMAGES[folder.mainCard].name}>
+                <button
+                  aria-label={`Return ${CARD_IMAGES[folder.mainCard].name}`}
+                  className="absolute h-[190px] left-[49px] top-[72px] w-[130px] z-[4]"
+                  data-name={CARD_IMAGES[folder.mainCard].name}
+                  onClick={(e) => onFolderCardReturn(folder.id, "main", e)}
+                  style={{ cursor: "grab" }}
+                  type="button"
+                >
                   <img alt="" className="absolute inset-0 max-w-none object-cover size-full" src={CARD_IMAGES[folder.mainCard].src} />
-                </div>
+                </button>
               )}
               {folder.state === "waiting" && (
-                <div className="absolute h-[226px] left-[129px] top-[22px] w-[196px] z-[2]" data-name="ZoneAdd">
+                <div className="absolute h-[226px] left-[159px] top-[52px] w-[196px] z-[2]" data-name="ZoneAdd">
                   <img
                     alt=""
                     className="absolute inset-0 max-w-none object-cover pointer-events-none size-full z-[1]"
                     src={addSlotImage}
                   />
                   {folder.addedCard && (
-                    <div className="absolute h-[190px] left-[44px] top-[18px] w-[130px] pointer-events-none z-[3]" data-name={CARD_IMAGES[folder.addedCard].name}>
+                    <button
+                      aria-label={`Return ${CARD_IMAGES[folder.addedCard].name}`}
+                      className="absolute h-[190px] left-[44px] top-[18px] w-[130px] z-[5]"
+                      data-name={CARD_IMAGES[folder.addedCard].name}
+                      onClick={(e) => onFolderCardReturn(folder.id, "added", e)}
+                      style={{ cursor: "grab" }}
+                      type="button"
+                    >
                       <img alt="" className="absolute inset-0 max-w-none object-cover size-full" src={CARD_IMAGES[folder.addedCard].src} />
-                    </div>
+                    </button>
                   )}
                 </div>
               )}
@@ -1385,19 +1398,7 @@ function SecondStageGameLayer({
         })}
       </div>
 
-      {result && (
-        <div className="absolute inset-0 z-[50] flex items-center justify-center bg-black/20">
-          <div
-            className="text-[#e23939] text-[108px] tracking-[-2px]"
-            style={{
-              fontFamily: "'Gagalin', sans-serif",
-              WebkitTextStroke: "3px #171717",
-            }}
-          >
-            {result}
-          </div>
-        </div>
-      )}
+      {result && <SecondStageResultScreen result={result} />}
     </div>
   );
 }
@@ -1405,21 +1406,28 @@ function SecondStageGameLayer({
 function SecondStageGameCardsHand({
   cards,
   draggingCardIndex,
+  hoveredCardIndex,
   onCardClick,
+  onCardDrag,
   onCardDragEnd,
   onCardDragStart,
+  onCardHover,
 }: {
   cards: CardCategory[];
   draggingCardIndex: number | null;
+  hoveredCardIndex: number | null;
   onCardClick: (index: number, e: React.MouseEvent) => void;
+  onCardDrag: (index: number, e: React.DragEvent) => void;
   onCardDragEnd: (e: React.DragEvent) => void;
   onCardDragStart: (index: number, e: React.DragEvent) => void;
+  onCardHover: (index: number | null) => void;
 }) {
   return (
     <div className="absolute h-[190px] left-[528.83px] top-[613px] w-[900px] z-[24]" data-name="cards_hand">
       {cards.slice(0, MAX_SELECTED_PHRASES).map((category, index) => {
         const card = CARD_IMAGES[category];
-        const raised = draggingCardIndex === index;
+        const dragging = draggingCardIndex === index;
+        const hovered = hoveredCardIndex === index && !dragging;
         return (
           <button
             aria-label={card.name}
@@ -1428,16 +1436,25 @@ function SecondStageGameCardsHand({
             draggable
             key={`second-game-${category}-${index}`}
             onClick={(e) => onCardClick(index, e)}
+            onDrag={(e) => onCardDrag(index, e)}
             onDragEnd={onCardDragEnd}
+            onMouseEnter={() => onCardHover(index)}
+            onMouseLeave={() => onCardHover(null)}
+            onMouseDown={() => onCardHover(null)}
             onDragStart={(e) => onCardDragStart(index, e)}
             style={{
-              cursor: "grab",
+              cursor: dragging ? "grabbing" : "grab",
               left: index * SECOND_STAGE_CARD_GAP,
-              transform: raised ? "translateY(-142px) scale(1.9)" : "translateY(0) scale(1)",
+              transform: hovered ? "translateY(-112px) scale(1.62)" : "translateY(0) scale(1)",
               transformOrigin: "bottom center",
               transition: "transform 180ms ease-out, filter 180ms ease-out",
-              filter: raised ? "drop-shadow(0 0 24px rgba(226,57,57,0.95))" : undefined,
-              zIndex: raised ? 500 : index,
+              opacity: dragging ? 0.22 : 1,
+              filter: hovered
+                ? "drop-shadow(0 0 24px rgba(10,219,117,0.95))"
+                : dragging
+                  ? "drop-shadow(0 0 14px rgba(237,235,223,0.72))"
+                  : undefined,
+              zIndex: dragging ? 600 : hovered ? 500 : index,
             }}
             type="button"
           >
@@ -1445,6 +1462,31 @@ function SecondStageGameCardsHand({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function DraggingSecondStageCard({
+  category,
+  position,
+}: {
+  category: CardCategory;
+  position: DragPosition;
+}) {
+  const card = CARD_IMAGES[category];
+  return (
+    <div
+      className="absolute h-[190px] w-[130px]"
+      data-name="dragging_card_in_hand"
+      style={{
+        left: position.x,
+        pointerEvents: "none",
+        top: position.y,
+        transform: "translate(-50%, -50%)",
+        zIndex: 9999,
+      }}
+    >
+      <img alt="" className="absolute inset-0 max-w-none object-cover size-full" src={card.src} />
     </div>
   );
 }
@@ -1464,6 +1506,7 @@ function SecondStageMonitor({
   secondsLeft,
   onGameFolderClick,
   onGameFolderDrop,
+  onGameFolderCardReturn,
 }: {
   showMessages: boolean;
   envelopeShaking: boolean;
@@ -1479,6 +1522,7 @@ function SecondStageMonitor({
   secondsLeft: number;
   onGameFolderClick: (folderId: number, e: React.MouseEvent) => void;
   onGameFolderDrop: (folderId: number, e: React.DragEvent) => void;
+  onGameFolderCardReturn: (folderId: number, slot: "main" | "added", e: React.MouseEvent) => void;
 }) {
   return (
     <div
@@ -1568,8 +1612,9 @@ function SecondStageMonitor({
         <SecondStageGameLayer
           folders={folders}
           hype={hype}
-          onFolderClick={onGameFolderClick}
-          onFolderDrop={onGameFolderDrop}
+        onFolderClick={onGameFolderClick}
+        onFolderCardReturn={onGameFolderCardReturn}
+        onFolderDrop={onGameFolderDrop}
           result={gameResult}
           secondsLeft={secondsLeft}
           selectedFolderId={selectedFolderId}
@@ -1633,6 +1678,8 @@ function SecondStageScene({
   gameActive,
   gameCards,
   draggingCardIndex,
+  draggingCardPosition,
+  hoveredCardIndex,
   gameResult,
   folders,
   hype,
@@ -1646,16 +1693,21 @@ function SecondStageScene({
   secondsLeft,
   selectedFolderId,
   onGameCardClick,
+  onGameCardDrag,
   onGameCardDragEnd,
   onGameCardDragStart,
+  onGameCardHover,
   onGameFolderClick,
   onGameFolderDrop,
+  onGameFolderCardReturn,
 }: {
   cards: CardCategory[];
   envelopeShaking: boolean;
   gameActive: boolean;
   gameCards: CardCategory[];
   draggingCardIndex: number | null;
+  draggingCardPosition: DragPosition | null;
+  hoveredCardIndex: number | null;
   gameResult: SecondStageResult;
   folders: SecondStageFolder[];
   hype: number;
@@ -1669,10 +1721,13 @@ function SecondStageScene({
   secondsLeft: number;
   selectedFolderId: number | null;
   onGameCardClick: (index: number, e: React.MouseEvent) => void;
+  onGameCardDrag: (index: number, e: React.DragEvent) => void;
   onGameCardDragEnd: (e: React.DragEvent) => void;
   onGameCardDragStart: (index: number, e: React.DragEvent) => void;
+  onGameCardHover: (index: number | null) => void;
   onGameFolderClick: (folderId: number, e: React.MouseEvent) => void;
   onGameFolderDrop: (folderId: number, e: React.DragEvent) => void;
+  onGameFolderCardReturn: (folderId: number, slot: "main" | "added", e: React.MouseEvent) => void;
 }) {
   return (
     <div className="absolute inset-0 overflow-hidden" data-name="second_stage" style={{ animation: `secondStageFadeIn ${SCENE_FADE_MS}ms ease-out both` }}>
@@ -1689,6 +1744,7 @@ function SecondStageScene({
         hype={hype}
         onEnvelopeClick={onEnvelopeClick}
         onGameFolderClick={onGameFolderClick}
+        onGameFolderCardReturn={onGameFolderCardReturn}
         onGameFolderDrop={onGameFolderDrop}
         onGuideClose={onGuideClose}
         onGuideOpen={onGuideOpen}
@@ -1700,10 +1756,16 @@ function SecondStageScene({
         <SecondStageGameCardsHand
           cards={gameCards}
           draggingCardIndex={draggingCardIndex}
+          hoveredCardIndex={hoveredCardIndex}
           onCardClick={onGameCardClick}
+          onCardDrag={onGameCardDrag}
           onCardDragEnd={onGameCardDragEnd}
+          onCardHover={onGameCardHover}
           onCardDragStart={onGameCardDragStart}
         />
+      )}
+      {gameActive && draggingCardIndex !== null && draggingCardPosition && gameCards[draggingCardIndex] && (
+        <DraggingSecondStageCard category={gameCards[draggingCardIndex]} position={draggingCardPosition} />
       )}
       {!gameActive && <SecondStageCards cards={cards} />}
     </div>
@@ -1712,12 +1774,10 @@ function SecondStageScene({
 
 function PhraseSelectionScene({
   activePhrases,
-  selectedCount,
   onPhraseClick,
   onPhraseExpired,
 }: {
   activePhrases: FallingPhrase[];
-  selectedCount: number;
   onPhraseClick: (phrase: FallingPhrase, e: React.MouseEvent) => void;
   onPhraseExpired: (instanceId: number) => void;
 }) {
@@ -1735,9 +1795,6 @@ function PhraseSelectionScene({
             onExpired={onPhraseExpired}
           />
         ))}
-      </div>
-      <div className="absolute inset-0 pointer-events-none z-[40]">
-        <PhraseCounter value={selectedCount} active={selectedCount < MAX_SELECTED_PHRASES} />
       </div>
     </>
   );
@@ -2010,6 +2067,8 @@ export default function App() {
   const [selectedSecondCardIndex, setSelectedSecondCardIndex] = useState<number | null>(null);
   const [selectedSecondFolderId, setSelectedSecondFolderId] = useState<number | null>(null);
   const [draggingSecondCardIndex, setDraggingSecondCardIndex] = useState<number | null>(null);
+  const [draggingSecondCardPosition, setDraggingSecondCardPosition] = useState<DragPosition | null>(null);
+  const [hoveredSecondCardIndex, setHoveredSecondCardIndex] = useState<number | null>(null);
   const [secondStageHype, setSecondStageHype] = useState(HYPE_START);
   const [secondStageSecondsLeft, setSecondStageSecondsLeft] = useState(SECOND_STAGE_GAME_SECONDS);
   const [secondStageResult, setSecondStageResult] = useState<SecondStageResult>(null);
@@ -2161,6 +2220,7 @@ export default function App() {
 
     const id = setInterval(() => {
       const now = Date.now();
+      setSecondStageHype((hype) => Math.max(0, hype - HYPE_DECAY));
       setSecondStageSecondsLeft((seconds) => {
         const next = Math.max(0, seconds - 1);
         if (next === 0) {
@@ -2392,6 +2452,8 @@ export default function App() {
     setSelectedSecondCardIndex(null);
     setSelectedSecondFolderId(null);
     setDraggingSecondCardIndex(null);
+    setDraggingSecondCardPosition(null);
+    setHoveredSecondCardIndex(null);
     setSecondStageHype(HYPE_START);
     setSecondStageSecondsLeft(SECOND_STAGE_GAME_SECONDS);
     setSecondStageResult(null);
@@ -2434,6 +2496,8 @@ export default function App() {
       });
       setSelectedSecondCardIndex(null);
       setDraggingSecondCardIndex(null);
+      setDraggingSecondCardPosition(null);
+      setHoveredSecondCardIndex(null);
       setSelectedSecondFolderId(folderId);
       return;
     }
@@ -2466,6 +2530,8 @@ export default function App() {
       );
       setSelectedSecondCardIndex(null);
       setDraggingSecondCardIndex(null);
+      setDraggingSecondCardPosition(null);
+      setHoveredSecondCardIndex(null);
       setSelectedSecondFolderId(null);
     }
   }, [phase, secondStageCards, secondStageFolders, secondStageHype, secondStageResult]);
@@ -2486,17 +2552,41 @@ export default function App() {
     setSelectedSecondCardIndex((current) => (current === index ? null : index));
   }, [phase, placeSecondStageCardInFolder, secondStageCards, secondStageFolders, secondStageResult, selectedSecondFolderId]);
 
+  const getCanvasDragPosition = useCallback((e: React.DragEvent): DragPosition => {
+    const scaledWidth = 1600 * scale;
+    const scaledHeight = 900 * scale;
+    return {
+      x: (e.clientX - (window.innerWidth - scaledWidth) / 2) / scale,
+      y: (e.clientY - (window.innerHeight - scaledHeight) / 2) / scale,
+    };
+  }, [scale]);
+
   const handleSecondStageCardDragStart = useCallback((index: number, e: React.DragEvent) => {
     e.stopPropagation();
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", String(index));
+    const emptyDragImage = document.createElement("canvas");
+    emptyDragImage.width = 1;
+    emptyDragImage.height = 1;
+    e.dataTransfer.setDragImage(emptyDragImage, 0, 0);
     setSelectedSecondCardIndex(index);
     setDraggingSecondCardIndex(index);
-  }, []);
+    setDraggingSecondCardPosition(getCanvasDragPosition(e));
+    setHoveredSecondCardIndex(null);
+  }, [getCanvasDragPosition]);
+
+  const handleSecondStageCardDrag = useCallback((index: number, e: React.DragEvent) => {
+    e.stopPropagation();
+    if (e.clientX === 0 && e.clientY === 0) return;
+    setDraggingSecondCardIndex(index);
+    setDraggingSecondCardPosition(getCanvasDragPosition(e));
+  }, [getCanvasDragPosition]);
 
   const handleSecondStageCardDragEnd = useCallback((e: React.DragEvent) => {
     e.stopPropagation();
     setDraggingSecondCardIndex(null);
+    setDraggingSecondCardPosition(null);
+    setHoveredSecondCardIndex(null);
   }, []);
 
   const handleSecondStageFolderClick = useCallback((folderId: number, e: React.MouseEvent) => {
@@ -2513,6 +2603,70 @@ export default function App() {
     if (!Number.isFinite(cardIndex)) return;
     placeSecondStageCardInFolder(cardIndex, folderId);
   }, [placeSecondStageCardInFolder]);
+
+  const handleSecondStageFolderCardReturn = useCallback((folderId: number, slot: "main" | "added", e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (phase !== "secondStageGame" || secondStageResult) return;
+
+    const folder = secondStageFolders.find((item) => item.id === folderId);
+    if (!folder?.mainCard) return;
+
+    const now = Date.now();
+    const returnedCards: CardCategory[] = [];
+    let comboToUndo: SecondStageCombo | null = null;
+    if (folder.addedCard) {
+      comboToUndo = resolveSecondStageCombo(folder.mainCard, folder.addedCard);
+    }
+
+    if (slot === "added") {
+      if (!folder.addedCard) return;
+      returnedCards.push(folder.addedCard);
+    } else {
+      returnedCards.push(folder.mainCard);
+      if (folder.addedCard) returnedCards.push(folder.addedCard);
+    }
+
+    setSecondStageCards((cards) => {
+      let next = [...cards];
+      if (comboToUndo?.card) {
+        const comboCardIndex = next.lastIndexOf(comboToUndo.card);
+        if (comboCardIndex >= 0) {
+          next = next.filter((_, index) => index !== comboCardIndex);
+        }
+      }
+      return [...next, ...returnedCards];
+    });
+    if (comboToUndo?.hype) {
+      setSecondStageHype((hype) => Math.max(0, hype - comboToUndo.hype));
+    }
+    setSecondStageFolders((folders) =>
+      folders.map((item) =>
+        item.id === folderId
+          ? slot === "added"
+            ? {
+                ...item,
+                state: "waiting",
+                addedCard: undefined,
+                expiresAt: now + FOLDER_LIFETIME_MS,
+                blinkAt: now + ADD_CARD_REPLACE_MS,
+              }
+            : {
+                ...item,
+                state: "empty",
+                mainCard: undefined,
+                addedCard: undefined,
+                expiresAt: now + FOLDER_LIFETIME_MS,
+                blinkAt: now + FOLDER_BLINK_MS,
+              }
+          : item
+      )
+    );
+    setSelectedSecondCardIndex(null);
+    setSelectedSecondFolderId(null);
+    setDraggingSecondCardIndex(null);
+    setDraggingSecondCardPosition(null);
+    setHoveredSecondCardIndex(null);
+  }, [phase, secondStageFolders, secondStageResult]);
 
   // ── Tip click ──────────────────────────────────────────────────────────────
   const handleTipClick = useCallback(
@@ -2603,6 +2757,8 @@ export default function App() {
     setSelectedSecondCardIndex(null);
     setSelectedSecondFolderId(null);
     setDraggingSecondCardIndex(null);
+    setDraggingSecondCardPosition(null);
+    setHoveredSecondCardIndex(null);
     setSecondStageHype(HYPE_START);
     setSecondStageSecondsLeft(SECOND_STAGE_GAME_SECONDS);
     setSecondStageResult(null);
@@ -2725,10 +2881,14 @@ export default function App() {
           {isPhraseSelection && (
             <PhraseSelectionScene
               activePhrases={activePhrases}
-              selectedCount={selectedPhraseCount}
               onPhraseClick={handlePhraseClick}
               onPhraseExpired={handlePhraseExpired}
             />
+          )}
+          {(isGameIntroScrim || isPhraseSelection) && (
+            <div className="absolute inset-0 pointer-events-none z-[40]">
+              <PhraseCounter value={selectedPhraseCount} active={selectedPhraseCount < MAX_SELECTED_PHRASES} />
+            </div>
           )}
         </div>
 
@@ -2748,18 +2908,23 @@ export default function App() {
           <SecondStageScene
             cards={awardedCards}
             draggingCardIndex={draggingSecondCardIndex}
+            draggingCardPosition={draggingSecondCardPosition}
             envelopeShaking={isSecondStageAlert && envelopeShaking}
             folders={secondStageFolders}
             gameActive={isSecondStageGame}
             gameCards={secondStageCards}
             gameResult={secondStageResult}
             guideOpen={guideOpen}
+            hoveredCardIndex={hoveredSecondCardIndex}
             hype={secondStageHype}
             onEnvelopeClick={handleSecondStageEnvelopeClick}
             onGameCardClick={handleSecondStageCardClick}
+            onGameCardDrag={handleSecondStageCardDrag}
             onGameCardDragEnd={handleSecondStageCardDragEnd}
+            onGameCardHover={setHoveredSecondCardIndex}
             onGameCardDragStart={handleSecondStageCardDragStart}
             onGameFolderClick={handleSecondStageFolderClick}
+            onGameFolderCardReturn={handleSecondStageFolderCardReturn}
             onGameFolderDrop={handleSecondStageFolderDrop}
             onGuideClose={handleGuideClose}
             onGuideOpen={handleGuideOpen}
